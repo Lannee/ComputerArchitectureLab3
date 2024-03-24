@@ -25,9 +25,10 @@ impl fmt::Display for TranslationError {
 
 
 const INPUT_FORMAT: &str = "
-    cargo run -- <SOURCE_FILE>
+    cargo run -- <SOURCE_FILE> <TARGET_FILE>
     
-    where SOURCE_FILE - file with source code";   
+    where SOURCE_FILE - file with source code
+          TARGET_FILE - file to store out machine code";   
 
 
 pub enum TranslatorInputError {
