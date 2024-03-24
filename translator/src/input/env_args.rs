@@ -1,12 +1,17 @@
-const FILE_PATH_INDEX: usize = 1;
+const SOURCE_FILE_INDEX: usize = 1;
+const OUT_FILE_INDEX: usize = 2;
 
 pub struct EnvArgs {
-    pub source_file: Option<String>
+    pub source_file: Option<String>,
+    pub out_file: Option<String>
 }
 
 impl std::convert::From<Vec<String>> for EnvArgs {
     fn from(vec: Vec<String>) -> EnvArgs {
-        EnvArgs {source_file: vec.get(FILE_PATH_INDEX).map(|string| string.clone())}
+        EnvArgs {
+            source_file: vec.get(SOURCE_FILE_INDEX).map(|string| string.clone()),
+            out_file: vec.get(OUT_FILE_INDEX).map(|string| string.clone()),
+        }
     }
 }
 
