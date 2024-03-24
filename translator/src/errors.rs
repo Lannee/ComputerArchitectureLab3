@@ -32,12 +32,14 @@ const INPUT_FORMAT: &str = "
 
 pub enum TranslatorInputError {
     NoInputFile,
+    FileError(std::io::Error),
 }
 
 impl fmt::Display for TranslatorInputError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TranslatorInputError::NoInputFile => write!(f, "No input file. The following input format is required: {INPUT_FORMAT}")
+            TranslatorInputError::NoInputFile => write!(f, "No input file. The following input format is required: {INPUT_FORMAT}"),
+            TranslatorInputError::FileError(err) => write!(f, "File error: {err}"),
         }
     }
 }

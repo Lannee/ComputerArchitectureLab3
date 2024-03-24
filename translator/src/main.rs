@@ -1,16 +1,16 @@
-mod env_args;
+mod input;
 mod translator;
 mod errors;
 
 use errors::TranslationError;
-use errors::TranslatorInputError;
+use input::SourceCode;
 
 fn main() -> Result<(), TranslationError> {
-    let env = env_args::EnvArgs::get();
-    match env.source_file {
-        None => return Err(TranslationError::InputError(TranslatorInputError::NoInputFile)),
-        Some(file) => todo!()
-    }
+    let code: SourceCode = input::get_src()
+        .map_err(|err| TranslationError::InputError(err))?;
+
+
+
 
     Ok(())
 }
