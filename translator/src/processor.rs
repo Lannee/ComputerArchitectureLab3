@@ -16,9 +16,7 @@ impl<'a> ProcEntries<'a> {
         self.registers
             .iter()
             .filter(|el| 
-                el.representations
-                    .into_iter()
-                    .any(|x| x == reg_name)
+                el.has_name(reg_name)
             ).next()
     }
 }
