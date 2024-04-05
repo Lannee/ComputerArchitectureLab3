@@ -1,4 +1,5 @@
 pub mod register;
+pub mod commands;
 
 use register::*;
 
@@ -7,7 +8,7 @@ static PROCESSOR: ProcEntries = ProcEntries {
 };
 
 pub struct ProcEntries<'a> {
-    registers: &'a [Register<'static>]
+    registers: &'a [GlobRegister]
 }
 
 

@@ -1,5 +1,7 @@
 use crate::define_register;
 
+pub type GlobRegister = Register<'static>;
+
 
 define_register!(REG0, 0, "reg0");
 define_register!(REG1, 1, "reg1", "reg2");
@@ -13,9 +15,8 @@ pub struct Register<'a> {
 #[macro_export]
 macro_rules! define_register {
     ($name:ident, $id:expr, $($representations:expr), +) => {
-        pub const $name: Register = Register {
+        pub const $name: GlobRegister = GlobRegister {
             id: $id,
-            // representations: vec![$($representations), +],
             representations: &[$($representations), +],
         };
     };
