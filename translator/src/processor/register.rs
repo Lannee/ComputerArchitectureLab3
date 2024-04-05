@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::define_register;
 
 pub type GlobRegister = Register<'static>;
@@ -31,5 +33,12 @@ impl<'a> Register<'a> {
 
     pub fn get_id(&self) -> &u8 {
         &self.id
+    }
+}
+
+impl<'a> Serialize for Register<'a> {
+    fn serialize<S>(&self, serialaizer: S) -> Result<S::Ok, S::Error> 
+    where S: serde::Serializer { 
+        serialaizer.serialize_u8(self.id)
     }
 }

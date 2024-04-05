@@ -1,10 +1,10 @@
+use crate::machine_code::MachineCode;
 use crate::{errors::TranslationError, input::SourceCode};
 
 use crate::translator::format::*;
 
-use serde_json::{json, Value};
+pub fn parse(code: SourceCode) -> Result<MachineCode, TranslationError> {
 
-pub fn parse(code: SourceCode) -> Result<Value, TranslationError> {
     todo!()
 }
 

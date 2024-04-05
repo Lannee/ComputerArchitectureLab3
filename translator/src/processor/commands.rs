@@ -1,13 +1,12 @@
+use super::GlobRegister;
 
+use serde::Serialize;
 
-pub struct MachineCode {
-    instructions: f64
-}
-
+#[derive(Serialize)]
 pub enum Command {
-    MovRegReg(Register32, Register32),
-    MovRegVal(Register32, i32),
+    MovRegReg(GlobRegister, GlobRegister),
+    MovRegVal(GlobRegister, i32),
 
-    In(Register32, Register32),
-    Out(Register32, Register32),
+    In(GlobRegister, GlobRegister),
+    Out(GlobRegister, GlobRegister),
 }
