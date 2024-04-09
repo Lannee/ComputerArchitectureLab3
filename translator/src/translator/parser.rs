@@ -1,16 +1,30 @@
-use crate::errors::LinkError;
-use crate::{errors::TranslationError, input::SourceCode};
+use crate::errors::{LinkError, ParseError};
+use crate::machine_code::{Data, Inctructions, RawInctructions};
+use crate::input::SourceCode;
 
 use crate::translator::format::*;
 
 
-pub fn parse(code: SourceCode) -> Result<(), TranslationError> {
+pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>), ParseError> {
+
+    let code = code.trim();
+
+    let data = get_section_content(Section::Data, code)
+        .map(|data| {
+            "hello".as_bytes().to_vec()
+        });
+
+    let instructions = get_section_content(Section::Code, code)
+        .map(|code| {
+
+        });
+
 
     todo!()
 }
 
 
-pub fn link() -> Result<(), LinkError> {
+pub fn link(raw_instructions: RawInctructions) -> Result<Inctructions, LinkError> {
     todo!()
 }
 
