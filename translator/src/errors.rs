@@ -2,6 +2,8 @@ use core::fmt;
 
 pub enum TranslationError {
     InputError(TranslatorInputError),
+    ParseError(ParseError),
+    LinkError(LinkError)
 }
 
 impl fmt::Debug for TranslationError {
@@ -14,6 +16,8 @@ impl fmt::Display for TranslationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TranslationError::InputError(err) => write!(f, "{err}"),
+            TranslationError::ParseError(err) => write!(f, "{err}"),
+            TranslationError::LinkError(err) => write!(f, "{err}"),
         }
     }    
 }
@@ -42,5 +46,27 @@ impl fmt::Display for TranslatorInputError {
             TranslatorInputError::NoInputFile => write!(f, "No input file. The following input format is required: {INPUT_FORMAT}"),
             TranslatorInputError::FileError(err) => write!(f, "File error: {err}"),
         }
+    }
+}
+
+
+pub enum ParseError {
+
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
+
+pub enum LinkError {
+
+}
+
+impl fmt::Display for LinkError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
     }
 }
