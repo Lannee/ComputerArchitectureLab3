@@ -1,24 +1,29 @@
-use crate::machine_code::MachineCode;
+use crate::errors::LinkError;
 use crate::{errors::TranslationError, input::SourceCode};
 
 use crate::translator::format::*;
 
-pub fn parse(code: SourceCode) -> Result<MachineCode, TranslationError> {
+
+pub fn parse(code: SourceCode) -> Result<(), TranslationError> {
 
     todo!()
 }
 
 
-fn get_token(line: String) -> String {
+pub fn link() -> Result<(), LinkError> {
+    todo!()
+}
+
+
+fn get_token(line: &str) -> &str {
     line
         .split(COMMENT)
         .next()
         .unwrap()
         .trim()
-        .to_string()
 }
 
-fn get_token_elements<'a>(token: &'a String) -> (&'a str, Vec<&'a str>) {
+fn get_token_elements(token: &str) -> (&str, Vec<&str>) {
 
     let instr_args = token.split_once(INSTRUCTION_ARGUMENTS_SEPARATOR);
 
@@ -30,12 +35,19 @@ fn get_token_elements<'a>(token: &'a String) -> (&'a str, Vec<&'a str>) {
                 .map(|s| s.trim())
                 .collect::<Vec<&str>>()
         ),
-        None => (token.as_str(), Vec::new())
+        None => (token, Vec::new())
     }
 }
 
+fn get_label(token: &str) -> Option<&str> {
+    token.split_once(LABEL)
+        .map(|split| {
+            split.0
+                .trim()
+        })
+}
 
-pub fn get_section_content(section: &Section, code: &String) -> Option<String> {
+pub fn get_section_content(section: Section, code: &str) -> Option<String> {
     Some(code
             .split(&format!("{}", SECTION))
             .map(|x| x.trim())

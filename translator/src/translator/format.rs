@@ -4,6 +4,7 @@ pub const COMMENT: &str = ";";
 pub const INSTRUCTION_ARGUMENTS_SEPARATOR: &str = " ";
 pub const ARGUMENTS_SEPARATOR: &str = ",";
 pub const SECTION: &str = "section";
+pub const LABEL: &str = ":";
 
 
 pub enum Section {
