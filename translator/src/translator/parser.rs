@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use crate::processor::commands::Command;
+
 use crate::errors::{LinkError, ParseError};
 use crate::machine_code::{Data, Inctructions, RawInctructions};
 use crate::input::SourceCode;
@@ -9,6 +13,9 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
 
     let code = code.trim();
 
+    let mut data_labels: Vec<&str> = Vec::new();
+    let mut instructions_labels: Vec<&str> = Vec::new();
+
     let data = get_section_content(Section::Data, code)
         .map(|data| {
             "hello".as_bytes().to_vec()
@@ -16,7 +23,16 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
 
     let instructions = get_section_content(Section::Code, code)
         .map(|code| {
+            code.lines()
+                .map(|line| {
+                    let token = get_token(line);
 
+                    if let Some(instruction_label) = get_label(token) {
+                        todo!("Do instruction label save")
+                    }
+                    
+                    Command::from_str(token)
+                })
         });
 
 
@@ -37,22 +53,6 @@ fn get_token(line: &str) -> &str {
         .trim()
 }
 
-fn get_token_elements(token: &str) -> (&str, Vec<&str>) {
-
-    let instr_args = token.split_once(INSTRUCTION_ARGUMENTS_SEPARATOR);
-
-    match instr_args {
-        Some(instr_args) => (
-            instr_args.0, 
-            instr_args.1
-                .split(ARGUMENTS_SEPARATOR)
-                .map(|s| s.trim())
-                .collect::<Vec<&str>>()
-        ),
-        None => (token, Vec::new())
-    }
-}
-
 fn get_label(token: &str) -> Option<&str> {
     token.split_once(LABEL)
         .map(|split| {
@@ -61,7 +61,7 @@ fn get_label(token: &str) -> Option<&str> {
         })
 }
 
-pub fn get_section_content(section: Section, code: &str) -> Option<String> {
+pub fn get_section_content(section: Section, code: &str) -> Option<&str> {
     Some(code
             .split(&format!("{}", SECTION))
             .map(|x| x.trim())
@@ -70,6 +70,5 @@ pub fn get_section_content(section: Section, code: &str) -> Option<String> {
             .strip_prefix(&section.to_string())
             .unwrap()
             .trim()
-            .to_string()
         )
 }

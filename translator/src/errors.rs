@@ -51,7 +51,8 @@ impl fmt::Display for TranslatorInputError {
 
 
 pub enum ParseError {
-
+    NoSuchCommand(String),
+    InvalidCommandArgumants,
 }
 
 impl fmt::Display for ParseError {
