@@ -34,23 +34,19 @@ impl FromStr for Command {
 
 impl Command {
     fn init_mov(args: &[&str]) -> Result<Command, ParseError> {
-        if args.len() == 2 {
-            Ok(Command::MovRegReg(get_register(args[0])?, get_register(args[1])?))
-        } else {
-            Err(ParseError::InvalidCommandArgumants)
-        }
+        check_args_len(args, 2)?;
+
+        Ok(Command::MovRegReg(get_register(args[0])?, get_register(args[1])?))
     }
 
     fn init_movn(args: &[&str]) -> Result<Command, ParseError> {
-        if args.len() == 2 {
-            Ok(Command::MovRegVal(
-                get_register(args[0])?, 
-                args[1].parse()
-                    .map_err(|_| ParseError::InvalidCommandArgumants)?
-            ))
-        } else {
-            Err(ParseError::InvalidCommandArgumants)
-        }
+        check_args_len(args, 2)?;
+
+        Ok(Command::MovRegVal(
+            get_register(args[0])?, 
+            args[1].parse()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+        ))
     }
 }
 
@@ -88,4 +84,10 @@ fn get_register(reg_name: &str) -> Result<&'static GlobRegister, ParseError> {
         Some(reg) => Ok(reg),
         None => return Err(ParseError::InvalidCommandArgumants)
     }
+}
+
+fn check_args_len(args: &[&str], expexted: usize) -> Result<(), ParseError> {
+    if args.len() != expexted {
+        Err(ParseError::InvalidAmountOfCommandArguments(args.into_iter().map(|str| str.to_string()).collect(), 2, args.len()))
+    } else {Ok(())}
 }

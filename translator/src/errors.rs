@@ -53,6 +53,7 @@ impl fmt::Display for TranslatorInputError {
 pub enum ParseError {
     NoSuchCommand(String),
     InvalidCommandArgumants,
+    InvalidAmountOfCommandArguments(Vec<String>, usize, usize)
 }
 
 impl fmt::Display for ParseError {
@@ -62,6 +63,7 @@ impl fmt::Display for ParseError {
         match self {
             NoSuchCommand(command) => write!(f, "Unknown command \"{}\"", command),
             InvalidCommandArgumants => write!(f, "Invalid command arguments"),
+            InvalidAmountOfCommandArguments(args, expected, found) => write!(f, "Invalid number of command arguments: \"{}\".\nExpected {expected}, but found {found}", args.join(", ")),
         }
     }
 }
