@@ -3,7 +3,7 @@ pub mod commands;
 
 use register::*;
 
-static PROCESSOR: ProcEntries = ProcEntries {
+pub static PROCESSOR: ProcEntries = ProcEntries {
     registers: &[REG0, REG1],
 };
 
@@ -13,7 +13,7 @@ pub struct ProcEntries<'a> {
 
 
 impl<'a> ProcEntries<'a> {
-    fn get_register(&self, reg_name: &String) -> Option<&Register<'static>> {
+    pub fn get_register(&self, reg_name: &str) -> Option<&Register<'static>> {
         self.registers
             .iter()
             .filter(|el| 

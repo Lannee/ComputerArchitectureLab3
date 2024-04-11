@@ -26,6 +26,7 @@ impl FromStr for Command {
 
         match token_elements.0 {
             "mov" => Self::init_mov(token_elements.1.as_slice()),
+            "movn" => Self::init_movn(token_elements.1.as_slice()),
             _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
         }
     }
@@ -34,7 +35,19 @@ impl FromStr for Command {
 impl Command {
     fn init_mov(args: &[&str]) -> Result<Command, ParseError> {
         if args.len() == 2 {
-            Ok(Command::MovRegReg(get_register(args[0])?, get_register(args[0])?))
+            Ok(Command::MovRegReg(get_register(args[0])?, get_register(args[1])?))
+        } else {
+            Err(ParseError::InvalidCommandArgumants)
+        }
+    }
+
+    fn init_movn(args: &[&str]) -> Result<Command, ParseError> {
+        if args.len() == 2 {
+            Ok(Command::MovRegVal(
+                get_register(args[0])?, 
+                args[1].parse()
+                    .map_err(|_| ParseError::InvalidCommandArgumants)?
+            ))
         } else {
             Err(ParseError::InvalidCommandArgumants)
         }

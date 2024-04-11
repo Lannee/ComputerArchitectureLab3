@@ -57,7 +57,12 @@ pub enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        use ParseError::*;
+
+        match self {
+            NoSuchCommand(command) => write!(f, "Unknown command \"{}\"", command),
+            InvalidCommandArgumants => write!(f, "Invalid command arguments"),
+        }
     }
 }
 

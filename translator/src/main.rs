@@ -14,7 +14,7 @@ fn main() -> Result<(), TranslationError> {
     let code: SourceCode = input::get_src()
         .map_err(|err| TranslationError::InputError(err))?;
 
-    let machine_code = translate(code)?;
+    let machine_code = translate(&code)?;
 
     input::get_target_file()
         .map_err(|err| TranslationError::InputError(err))?

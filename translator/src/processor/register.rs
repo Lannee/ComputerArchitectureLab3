@@ -25,10 +25,10 @@ macro_rules! define_register {
 }
 
 impl<'a> Register<'a> {
-    pub fn has_name(&self, name: &String) -> bool {
+    pub fn has_name(&self, name: &str) -> bool {
         self.representations
             .into_iter()
-            .any(|a| a == name)
+            .any(|a| *a == name)
     }
 
     pub fn get_id(&self) -> &u8 {
