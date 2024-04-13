@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::{hash_map, HashMap};
 use std::str::FromStr;
 
-use crate::processor::commands::Command;
+use crate::processor::commands::{DataCommand, Instruction};
 
 use crate::errors::{LinkError, ParseError};
 use crate::machine_code::{Data, Inctructions, MachineCode, RawInctructions};
@@ -31,7 +31,7 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                         data_labels.insert(data_label.to_owned(), *byte_counter.borrow());
                     }
                     
-                    Command::from_str(delate_label(token))
+                    DataCommand::from_str(delate_label(token))
                 }).filter(|command| {
                     match command {
                         Ok(_) => true,
@@ -40,7 +40,7 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                     }
                 }).map(|command| {
                     match command? {
-                        Command::Byte(value) => {
+                        DataCommand::Byte(value) => {
                             *byte_counter.borrow_mut() += 1;
                             Ok(value)
                         },
@@ -67,7 +67,7 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                         instructions_labels.insert(instruction_label.to_owned(), *instruction_counter.borrow());
                     }
                     
-                    Command::from_str(delate_label(token))
+                    Instruction::from_str(delate_label(token))
                 }).filter(|command| {
                     match command {
                         Ok(_) => true,
@@ -78,7 +78,7 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                     let command = command?;
                     *instruction_counter.borrow_mut() += 1;
                     Ok(command)
-                }).collect::<Result<Vec<Command>, ParseError>>()
+                }).collect::<Result<Vec<Instruction>, ParseError>>()
         });
 
     let instructions = match instructions {
@@ -100,9 +100,11 @@ pub fn link(raw_instructions: RawInctructions) -> Result<Inctructions, LinkError
     println!("instructions_labels: {:?}", raw_instructions.instructions_labels);
     println!("data_labels: {:?}", raw_instructions.data_labels);
 
-    Ok(
-        raw_instructions.instructions
-    )
+    raw_instructions.instructions.iter()
+        .filter(|instruction| instruction.can_contain_label())
+        .map(|instruction| {
+            todo!()
+        }).collect()
 }
 
 

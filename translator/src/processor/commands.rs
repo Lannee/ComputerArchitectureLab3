@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{io::Empty, num::IntErrorKind, str::FromStr};
+use std::{num::IntErrorKind, str::FromStr};
 
 use crate::errors::ParseError;
 use crate::machine_code::Address;
@@ -11,19 +11,17 @@ use super::GlobRegister;
 use serde::{Serialize, Serializer};
 
 #[derive(Serialize)]
-pub enum Command {
+pub enum Instruction {
     Mov(&'static GlobRegister, &'static GlobRegister),
     Movn(&'static GlobRegister, i32),
 
     In(&'static GlobRegister, &'static GlobRegister),
     Out(&'static GlobRegister, &'static GlobRegister),
 
-    Byte(u8),
-
     Jmp(Mark<Address>)
 }
 
-impl FromStr for Command {
+impl FromStr for Instruction {
     type Err = ParseError;
 
     fn from_str(raw_command: &str) -> Result<Self, Self::Err> {
@@ -34,8 +32,6 @@ impl FromStr for Command {
             "mov" => Self::init_mov(args),
             "movn" => Self::init_movn(args),
             "out" => Self::init_out(args),
-            "byte" => Self::init_byte(args),
-            "char" => Self::init_char(args),
             "jmp" => Self::init_jmp(args),
 
             "" => Err(ParseError::EmptyLineAsCommand),
@@ -44,85 +40,65 @@ impl FromStr for Command {
     }
 }
 
-impl Command {
-    pub fn is_data_command(&self) -> bool {
-        use Command::*;
+impl Instruction {
+    pub fn can_contain_label(&self) -> bool {
+        use Instruction::*;
 
         match self {
-            Byte(_) => true,
+            Jmp(_) => true,
             _ => false
         }
     }
 }
 
-impl Command {
-    fn init_mov(args: &[&str]) -> Result<Command, ParseError> {
+impl Instruction {
+    fn init_mov(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Command::Mov(get_register(args[0])?, get_register(args[1])?))
+        Ok(Instruction::Mov(get_register(args[0])?, get_register(args[1])?))
     }
 
-    fn init_movn(args: &[&str]) -> Result<Command, ParseError> {
+    fn init_movn(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Command::Movn(
+        Ok(Instruction::Movn(
             get_register(args[0])?, 
             args[1].parse()
                 .map_err(|_| ParseError::InvalidCommandArgumants)?
         ))
     }
 
-    fn init_out(args: &[&str]) -> Result<Command, ParseError> {
+    fn init_out(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Command::Out(get_register(args[0])?, get_register(args[1])?))
+        Ok(Instruction::Out(get_register(args[0])?, get_register(args[1])?))
     }
 
-    fn init_byte(args: &[&str]) -> Result<Command, ParseError> {
-        check_args_len(args, 1)?;
-
-        Ok(Command::Byte(
-            args[0].parse()
-                .map_err(|_| ParseError::InvalidCommandArgumants)?
-        ))
-    }
-
-    fn init_char(args: &[&str]) -> Result<Command, ParseError> {
-        check_args_len(args, 1)?;
-
-        Ok(Command::Byte(
-            args[0]
-                .parse::<char>()
-                .map_err(|_| ParseError::InvalidCommandArgumants)?
-                as u8
-        ))
-    }
-
-    fn init_jmp(args: &[&str]) -> Result<Command, ParseError> {
+    fn init_jmp(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 1)?;
 
         match args[0].parse::<Address>() {
-            Ok(ok) => Ok(Command::Jmp(Mark::Address(ok))),
+            Ok(ok) => Ok(Instruction::Jmp(Mark::Address(ok))),
             Err(err) => match err.kind() {
                 IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
-                _ => Ok(Command::Jmp(Mark::Label(args[0].to_owned())))
+                _ => Ok(Instruction::Jmp(Mark::Label(args[0].to_owned())))
             }
         }
 
     }
+
+
 }
 
-impl fmt::Display for Command {
+impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Command::*;
+        use Instruction::*;
 
         match self {
             Mov(target, from) => write!(f, ""),
             Movn(target, value) => write!(f, ""),
             In(target, from) => write!(f, ""),
             Out(target, from) => write!(f, ""),
-
-            Byte(value) => write!(f, ""),
             _ => write!(f, ""),
         }  
     }    
@@ -159,9 +135,67 @@ fn check_args_len(args: &[&str], expexted: usize) -> Result<(), ParseError> {
 
 
 
+pub enum DataCommand {
+    Byte(u8),
+
+}
+
+impl FromStr for DataCommand {
+    type Err = ParseError;
+
+    fn from_str(raw_command: &str) -> Result<Self, Self::Err> {
+        let token_elements = get_token_elements(raw_command);
+
+        let args = token_elements.1.as_slice();
+        match token_elements.0 {
+            "byte" => Self::init_byte(args),
+            "char" => Self::init_char(args),
+
+            "" => Err(ParseError::EmptyLineAsCommand),
+            _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
+        }
+    }
+}
+
+
+impl DataCommand {
+    fn init_byte(args: &[&str]) -> Result<DataCommand, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(DataCommand::Byte(
+            args[0].parse()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+        ))
+    }
+
+    fn init_char(args: &[&str]) -> Result<DataCommand, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(DataCommand::Byte(
+            args[0]
+                .parse::<char>()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+                as u8
+        ))
+    }
+
+}
+
+
+
+
 pub enum Mark<T> {
     Label(String),
     Address(T)
+}
+
+impl<T> Mark<T> {
+    pub fn is_label(&self) -> bool {
+        match self {
+            Mark::Label(_) => true,
+            _ => false
+        }
+    }
 }
 
 impl<T: Serialize> Serialize for Mark<T> {

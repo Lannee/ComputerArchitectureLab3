@@ -1,10 +1,10 @@
-use crate::processor::commands::Command;
-use std::collections::{BTreeMap, HashMap};
+use crate::processor::commands::Instraction;
+use std::collections::HashMap;
 
 use serde::Serialize;
 
 
-pub type Inctructions = Vec<Command>;
+pub type Inctructions = Vec<Instraction>;
 pub type Data = Vec<u8>;
 pub type Labels = HashMap<String, usize>;
 
