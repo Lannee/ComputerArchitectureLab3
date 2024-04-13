@@ -8,6 +8,8 @@ pub type Inctructions = Vec<Command>;
 pub type Data = Vec<u8>;
 pub type Labels = HashMap<String, usize>;
 
+pub type Address = u32;
+
 
 #[derive(Serialize)]
 pub struct MachineCode {

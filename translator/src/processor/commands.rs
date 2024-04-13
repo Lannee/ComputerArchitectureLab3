@@ -1,23 +1,26 @@
 use core::fmt;
-use std::str::FromStr;
+use std::{io::Empty, num::IntErrorKind, str::FromStr};
 
 use crate::errors::ParseError;
+use crate::machine_code::Address;
 use crate::translator::format::*;
 use crate::processor::PROCESSOR;
 
 use super::GlobRegister;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 
 #[derive(Serialize)]
 pub enum Command {
-    MovRegReg(&'static GlobRegister, &'static GlobRegister),
-    MovRegVal(&'static GlobRegister, i32),
+    Mov(&'static GlobRegister, &'static GlobRegister),
+    Movn(&'static GlobRegister, i32),
 
     In(&'static GlobRegister, &'static GlobRegister),
     Out(&'static GlobRegister, &'static GlobRegister),
 
     Byte(u8),
+
+    Jmp(Mark<Address>)
 }
 
 impl FromStr for Command {
@@ -33,6 +36,7 @@ impl FromStr for Command {
             "out" => Self::init_out(args),
             "byte" => Self::init_byte(args),
             "char" => Self::init_char(args),
+            "jmp" => Self::init_jmp(args),
 
             "" => Err(ParseError::EmptyLineAsCommand),
             _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
@@ -55,13 +59,13 @@ impl Command {
     fn init_mov(args: &[&str]) -> Result<Command, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Command::MovRegReg(get_register(args[0])?, get_register(args[1])?))
+        Ok(Command::Mov(get_register(args[0])?, get_register(args[1])?))
     }
 
     fn init_movn(args: &[&str]) -> Result<Command, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Command::MovRegVal(
+        Ok(Command::Movn(
             get_register(args[0])?, 
             args[1].parse()
                 .map_err(|_| ParseError::InvalidCommandArgumants)?
@@ -93,6 +97,19 @@ impl Command {
                 as u8
         ))
     }
+
+    fn init_jmp(args: &[&str]) -> Result<Command, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Command::Jmp(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Command::Jmp(Mark::Label(args[0].to_owned())))
+            }
+        }
+
+    }
 }
 
 impl fmt::Display for Command {
@@ -100,8 +117,8 @@ impl fmt::Display for Command {
         use Command::*;
 
         match self {
-            MovRegReg(target, from) => write!(f, ""),
-            MovRegVal(target, value) => write!(f, ""),
+            Mov(target, from) => write!(f, ""),
+            Movn(target, value) => write!(f, ""),
             In(target, from) => write!(f, ""),
             Out(target, from) => write!(f, ""),
 
@@ -145,4 +162,14 @@ fn check_args_len(args: &[&str], expexted: usize) -> Result<(), ParseError> {
 pub enum Mark<T> {
     Label(String),
     Address(T)
+}
+
+impl<T: Serialize> Serialize for Mark<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> 
+    where S: Serializer { 
+        match self {
+            Mark::Address(address) => address.serialize(serializer),
+            Mark::Label(_) => panic!("Label serialization")
+        }
+    }
 }
