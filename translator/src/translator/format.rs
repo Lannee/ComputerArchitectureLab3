@@ -2,6 +2,7 @@ use core::fmt;
 
 pub const COMMENT: &str = ";";
 pub const INSTRUCTION_ARGUMENTS_SEPARATOR: &str = " ";
+pub const STRING_QUOTE: &str = "\"";
 pub const ARGUMENTS_SEPARATOR: &str = ",";
 pub const SECTION: &str = "section";
 pub const LABEL: &str = ":";

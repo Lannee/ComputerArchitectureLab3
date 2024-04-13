@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{hash_map, HashMap};
+use std::ffi::CString;
 use std::str::FromStr;
 
 use crate::processor::commands::{DataCommand, Instruction, Mark};
@@ -43,6 +44,12 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                             *byte_counter.borrow_mut() += 1;
                             Ok(vec![value])
                         },
+                        DataCommand::Str(str) => {
+                            let c_fmt_str = CString::new(str).unwrap();
+                            let bytes = c_fmt_str.as_bytes_with_nul();
+                            *byte_counter.borrow_mut() += bytes.len() as u32;
+                            Ok(bytes.to_vec())
+                        }
                         _ => Err(ParseError::InstructionInDataSection),
                     }
                 }).collect::<Result<Vec<Data>, ParseError>>()
@@ -100,11 +107,6 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
 
 
 pub fn link(raw_instructions: RawInctructions) -> Result<Inctructions, LinkError> {
-
-    println!("instructions_labels: {:?}", raw_instructions.instructions_labels);
-    println!("data_labels: {:?}", raw_instructions.data_labels);
-    
-    
     raw_instructions.instructions.iter()
         .map(|instruction| {
             Ok(
