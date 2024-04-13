@@ -34,19 +34,23 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                     DataCommand::from_str(delate_label(token))
                 }).filter(|command| {
                     match command {
-                        Ok(_) => true,
                         Err(ParseError::EmptyLineAsCommand) => false,
-                        Err(_) => true     
+                        _ => true     
                     }
                 }).map(|command| {
                     match command? {
                         DataCommand::Byte(value) => {
                             *byte_counter.borrow_mut() += 1;
-                            Ok(value)
+                            Ok(vec![value])
                         },
                         _ => Err(ParseError::InstructionInDataSection),
                     }
-                }).collect::<Result<Data, ParseError>>()
+                }).collect::<Result<Vec<Data>, ParseError>>()
+                .map(|vec| {
+                    vec.into_iter()
+                        .flatten()
+                        .collect::<Data>()
+                })
             });
 
     let data = match data {
