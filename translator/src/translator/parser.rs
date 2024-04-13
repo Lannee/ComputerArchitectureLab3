@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::collections::{hash_map, HashMap};
 use std::str::FromStr;
 
-use crate::processor::commands::{DataCommand, Instruction};
+use crate::processor::commands::{DataCommand, Instruction, Mark};
 
 use crate::errors::{LinkError, ParseError};
-use crate::machine_code::{Data, Inctructions, MachineCode, RawInctructions};
+use crate::machine_code::{Address, Data, Inctructions, MachineCode, RawInctructions};
 use crate::input::SourceCode;
 
 use crate::translator::format::*;
@@ -15,10 +15,10 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
 
     let code = code.trim();
 
-    let mut data_labels: HashMap<String, usize> = HashMap::new();
-    let mut instructions_labels: HashMap<String, usize> = HashMap::new();
+    let mut data_labels: HashMap<String, Address> = HashMap::new();
+    let mut instructions_labels: HashMap<String, Address> = HashMap::new();
 
-    let byte_counter: RefCell<usize> = 0.into();
+    let byte_counter: RefCell<Address> = 0.into();
     let data = get_section_content(Section::Data, code)
         .map(|data| {
             data.lines()
@@ -54,7 +54,7 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
         None => None
     };
 
-    let instruction_counter: RefCell<usize> = 0.into();
+    let instruction_counter: RefCell<Address> = 0.into();
     let instructions = get_section_content(Section::Code, code)
         .map(|code| {
             code.lines()
@@ -99,12 +99,32 @@ pub fn link(raw_instructions: RawInctructions) -> Result<Inctructions, LinkError
 
     println!("instructions_labels: {:?}", raw_instructions.instructions_labels);
     println!("data_labels: {:?}", raw_instructions.data_labels);
-
+    
+    
     raw_instructions.instructions.iter()
-        .filter(|instruction| instruction.can_contain_label())
         .map(|instruction| {
-            todo!()
-        }).collect()
+            Ok(
+                if instruction.can_contain_label() {
+                    let mark = instruction.get_mark().unwrap();
+
+                    let label = mark.get_label().unwrap();
+
+                    let address = if instruction.is_data_referencing() {
+                            let address = raw_instructions.data_labels.get(label);
+                            if let None = address {return Err(LinkError::UndefinedDataLabel(label.to_owned()))}
+                            address.unwrap()
+                        } else {
+                            let address = raw_instructions.instructions_labels.get(label);
+                            if let None = address {return Err(LinkError::UndefinedInstructionLabel(label.to_owned()))}
+                            address.unwrap()
+                        };
+                    
+                    instruction.set_mark(Mark::Address(*address))?
+                } else {
+                    instruction.clone()
+                }
+            )
+        }).collect::<Result<Inctructions, LinkError>>()
 }
 
 

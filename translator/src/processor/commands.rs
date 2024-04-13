@@ -1,7 +1,8 @@
 use core::fmt;
 use std::{num::IntErrorKind, str::FromStr};
 
-use crate::errors::ParseError;
+use crate::errors::LinkError;
+use crate::{errors::ParseError, machine_code::Label};
 use crate::machine_code::Address;
 use crate::translator::format::*;
 use crate::processor::PROCESSOR;
@@ -10,7 +11,7 @@ use super::GlobRegister;
 
 use serde::{Serialize, Serializer};
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub enum Instruction {
     Mov(&'static GlobRegister, &'static GlobRegister),
     Movn(&'static GlobRegister, i32),
@@ -42,11 +43,36 @@ impl FromStr for Instruction {
 
 impl Instruction {
     pub fn can_contain_label(&self) -> bool {
-        use Instruction::*;
+        self.is_data_referencing() || self.is_instruction_referencing()
+    }
 
+    pub fn is_data_referencing(&self) -> bool {
+        match self {
+            _ => false
+        }
+    }
+
+    pub fn is_instruction_referencing(&self) -> bool {
+        use Instruction::*;
         match self {
             Jmp(_) => true,
             _ => false
+        }
+    }
+
+    pub fn get_mark(&self) -> Option<&Mark<Address>> {
+        use Instruction::*;
+        match self {
+            Jmp(mark) => Some(mark),
+            _ => None
+        }
+    }
+
+    pub fn set_mark(&self, mark: Mark<Address>) -> Result<Instruction, LinkError> {
+        use Instruction::*;
+        match self {
+            Jmp(_) => Ok(Jmp(mark)),
+            _ => Err(LinkError::UnmarkableInstruction)
         }
     }
 }
@@ -183,7 +209,7 @@ impl DataCommand {
 
 
 
-
+#[derive(Clone)]
 pub enum Mark<T> {
     Label(String),
     Address(T)
@@ -194,6 +220,13 @@ impl<T> Mark<T> {
         match self {
             Mark::Label(_) => true,
             _ => false
+        }
+    }
+
+    pub fn get_label(&self) -> Option<&str> {
+        match self {
+            Mark::Label(label) => Some(label),
+            Mark::Address(_) => None
         }
     }
 }
