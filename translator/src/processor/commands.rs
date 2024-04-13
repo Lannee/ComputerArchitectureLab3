@@ -16,6 +16,8 @@ pub enum Command {
 
     In(&'static GlobRegister, &'static GlobRegister),
     Out(&'static GlobRegister, &'static GlobRegister),
+
+    Byte(u8),
 }
 
 impl FromStr for Command {
@@ -24,10 +26,27 @@ impl FromStr for Command {
     fn from_str(raw_command: &str) -> Result<Self, Self::Err> {
         let token_elements = get_token_elements(raw_command);
 
+        let args = token_elements.1.as_slice();
         match token_elements.0 {
-            "mov" => Self::init_mov(token_elements.1.as_slice()),
-            "movn" => Self::init_movn(token_elements.1.as_slice()),
+            "mov" => Self::init_mov(args),
+            "movn" => Self::init_movn(args),
+            "out" => Self::init_out(args),
+            "byte" => Self::init_byte(args),
+            "char" => Self::init_char(args),
+
+            "" => Err(ParseError::EmptyLineAsCommand),
             _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
+        }
+    }
+}
+
+impl Command {
+    pub fn is_data_command(&self) -> bool {
+        use Command::*;
+
+        match self {
+            Byte(_) => true,
+            _ => false
         }
     }
 }
@@ -48,6 +67,32 @@ impl Command {
                 .map_err(|_| ParseError::InvalidCommandArgumants)?
         ))
     }
+
+    fn init_out(args: &[&str]) -> Result<Command, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Command::Out(get_register(args[0])?, get_register(args[1])?))
+    }
+
+    fn init_byte(args: &[&str]) -> Result<Command, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(Command::Byte(
+            args[0].parse()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+        ))
+    }
+
+    fn init_char(args: &[&str]) -> Result<Command, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(Command::Byte(
+            args[0]
+                .parse::<char>()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+                as u8
+        ))
+    }
 }
 
 impl fmt::Display for Command {
@@ -58,7 +103,10 @@ impl fmt::Display for Command {
             MovRegReg(target, from) => write!(f, ""),
             MovRegVal(target, value) => write!(f, ""),
             In(target, from) => write!(f, ""),
-            Out(target, from) => write!(f, "")
+            Out(target, from) => write!(f, ""),
+
+            Byte(value) => write!(f, ""),
+            _ => write!(f, ""),
         }  
     }    
 }
@@ -90,4 +138,11 @@ fn check_args_len(args: &[&str], expexted: usize) -> Result<(), ParseError> {
     if args.len() != expexted {
         Err(ParseError::InvalidAmountOfCommandArguments(args.into_iter().map(|str| str.to_string()).collect(), 2, args.len()))
     } else {Ok(())}
+}
+
+
+
+pub enum Mark<T> {
+    Label(String),
+    Address(T)
 }
