@@ -1,23 +1,32 @@
-use self::register::*;
+use self::{datapath::*, register::*, clock::Clock};
 use crate::new_register32;
 
 pub mod register;
 pub mod datapath;
+pub mod clock;
+pub mod decoder;
 
 pub static mut CPU: CPU = CPU {
-    registers: &[
-        new_register32!(),  // REG0
-        new_register32!(),  // REG1
-        new_register32!(),  // REG2
-        new_register32!(),  // REG3
-        new_register32!(),  // REG4
-        new_register32!(),  // REG5
-        new_register32!(),  // REG6
-        new_register32!()   // REG7
-    ],
+    datapath: DataPath {
+        reg0: new_register32!(),
+        reg1: new_register32!(),
+        reg2: new_register32!(),
+        reg3: new_register32!(),
+        reg4: new_register32!(),
+        reg5: new_register32!(),
+        reg6: new_register32!(),
+        reg7: new_register32!(),
 
+        alu: ALU { left_input: 0, right_input: 0, output: 0 }
+    },
+    clock: Clock(0),
 };
 
 pub struct CPU {
-    pub registers: &'static [Register32]
+    pub datapath: DataPath,
+    pub clock: Clock,
+}
+
+impl CPU {
+
 }
