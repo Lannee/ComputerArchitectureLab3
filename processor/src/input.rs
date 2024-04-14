@@ -18,11 +18,11 @@ pub fn get_src() -> Result<(Instrictions, Data), InputError> {
     let raw_machine_code = serde_json::from_str::<RawMachineCode>(&content).map_err(|err| InputError::MachineCodeError(MachineCodeError::ParseError(err)))?;
 
     Ok((
-        raw_machine_code.raw_instructions
+        raw_machine_code.instructions
             .into_iter()
             .map(|raw| raw.try_into().map_err(|err| InputError::MachineCodeError(err)))
             .collect::<Result<Instrictions, InputError>>()?,
-        raw_machine_code.raw_data
+        raw_machine_code.data
     ))
 }
 
