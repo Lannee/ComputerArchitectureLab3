@@ -2,6 +2,11 @@ use core::fmt;
 
 pub enum ProcessorError {
     InputError(InputError),
+    ExecutionError(ExecutionError),
+}
+
+pub enum ExecutionError {
+    InvalidRegisterIndexError,
 }
 
 
@@ -30,6 +35,7 @@ impl fmt::Display for ProcessorError {
         use ProcessorError::*;
         match self {
             InputError(err) => write!(f, "Input error: \n{err}"),
+            ExecutionError(err) => write!(f, ""),
         }
     }    
 }

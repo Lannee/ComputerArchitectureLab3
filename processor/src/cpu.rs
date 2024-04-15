@@ -1,32 +1,42 @@
-use self::{datapath::*, register::*, clock::Clock};
-use crate::new_register32;
+use self::{clock::Clock, datapath::*, memory::Memory, register::*};
+use crate::input::machine_code::{Data, Instruction, Instructions};
 
 pub mod register;
 pub mod datapath;
 pub mod clock;
 pub mod decoder;
+pub mod memory;
 
-pub static mut CPU: CPU = CPU {
-    datapath: DataPath {
-        reg0: new_register32!(),
-        reg1: new_register32!(),
-        reg2: new_register32!(),
-        reg3: new_register32!(),
-        reg4: new_register32!(),
-        reg5: new_register32!(),
-        reg6: new_register32!(),
-        reg7: new_register32!(),
-
-        alu: ALU { left_input: 0, right_input: 0, output: 0 }
-    },
-    clock: Clock(0),
-};
+const DATA_MEMORY_CAPACITY: usize = 1024;
 
 pub struct CPU {
     pub datapath: DataPath,
     pub clock: Clock,
+    pub ip: Register<usize>,
+    pub instr_memory: Memory<Instruction>,
 }
 
 impl CPU {
-
+    pub fn new(instructions: Instructions, data: Data) -> CPU {
+        CPU {
+            datapath: DataPath {
+                reg0: Register32::new(),
+                reg1: Register32::new(),
+                reg2: Register32::new(),
+                reg3: Register32::new(),
+                reg4: Register32::new(),
+                reg5: Register32::new(),
+                reg6: Register32::new(),
+                reg7: Register32::new(),
+        
+                addr_reg: Register::<usize>::new(),
+        
+                alu: ALU { left_input: 0, right_input: 0, output: 0 },
+                memory: Memory::from_data_with_spec_size(data, DATA_MEMORY_CAPACITY)
+            },
+            clock: Clock(0),
+            ip: Register::<usize>::new(),
+            instr_memory: Memory::from_data_with_spec_size(instructions, DATA_MEMORY_CAPACITY),
+        }
+    }
 }

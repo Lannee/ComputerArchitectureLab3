@@ -32,6 +32,14 @@ pub enum Instruction {
     Sub(RegIndex, RegIndex, RegIndex),
     Mul(RegIndex, RegIndex, RegIndex),
     Rem(RegIndex, RegIndex, RegIndex),
+
+    Nop
+}
+
+impl Default for Instruction {
+    fn default() -> Self {
+        Instruction::Nop
+    }
 }
 
 // impl TryInto<Instruction> for RawInstriction {

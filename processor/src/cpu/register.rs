@@ -1,4 +1,4 @@
-pub type Register32 = Register<i32>;
+pub type Register32 = Register<u32>;
 
 #[derive(Debug)]
 pub struct Register<T: Copy> {
@@ -6,7 +6,7 @@ pub struct Register<T: Copy> {
 }
 
 impl<T: Copy + Default> Register<T> {
-    fn new() -> Register<T> {
+    pub fn new() -> Register<T> {
         Register { value: T::default() }
     }
 
@@ -23,7 +23,7 @@ impl<T: Copy + Default> Register<T> {
 macro_rules! new_register32 {
     () => {
         Register32 {
-            value: 0 as i32
+            value: 0 as u32
         }
     };
 }
