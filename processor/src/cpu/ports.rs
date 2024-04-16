@@ -1,5 +1,9 @@
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 
+use serde::de::Visitor;
+use serde::Deserialize;
+use serde::Deserializer;
+
 use crate::out_device::Device;
 
 
@@ -46,11 +50,11 @@ impl IOInterface {
 
     pub fn connect_device(&mut self, port: PortSelect, dev: Rc<RefCell<Device>>) {
         match port {
-            PortSelect::Port1 => {
+            PortSelect::Port0 => {
                 dev.deref().borrow_mut().port = Some(Rc::clone(&self.port1));
                 self.port1.deref().borrow_mut().device = Some(dev);
             },
-            PortSelect::Port2 => {
+            PortSelect::Port1 => {
                 dev.deref().borrow_mut().port = Some(Rc::clone(&self.port2));
                 self.port2.deref().borrow_mut().device = Some(dev);
             }
@@ -64,6 +68,40 @@ impl IOInterface {
 }
 
 pub enum PortSelect {
+    Port0,
     Port1,
-    Port2,
+}
+
+
+impl<'a> Deserialize<'a> for PortSelect {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'a> {
+        deserializer.deserialize_u64(__PortSelectVisitor)
+    }
+}
+
+struct __PortSelectVisitor;
+
+impl<'de> Visitor<'de> for __PortSelectVisitor {
+    type Value = PortSelect;
+
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        formatter.write_str("PortSelect")
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match value {
+            0 => Ok(PortSelect::Port0),
+            1 => Ok(PortSelect::Port1),
+            /* ... */
+            _ => Err(E::invalid_value(
+                serde::de::Unexpected::Unsigned(value),
+                &"port index",
+            )),
+        }
+    }
 }

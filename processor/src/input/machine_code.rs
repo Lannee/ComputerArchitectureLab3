@@ -1,12 +1,12 @@
 use serde::Deserialize;
 
-use crate::{cpu::{register::Register32, CPU}, errors::MachineCodeError};
+use crate::cpu::ports::PortSelect;
 
-// pub type RawInstrictions = Vec<RawInstriction>;
-// pub type RawData = Data;
+
 pub type Data = Vec<u8>;
 type Address = u32;
 type RegIndex = usize; 
+type PortIndex = usize;
 
 pub type Instructions = Vec<Instruction>;
 
@@ -22,23 +22,24 @@ pub enum Instruction {
     Mov(RegIndex, RegIndex),
     Movn(RegIndex, i32),
 
-    Out(RegIndex, RegIndex),
+    Out(PortSelect, RegIndex),
 
     Jmp(Address),
     Be(Address),
+    Bg(Address),
 
-    La(RegIndex, Address),
+    La(RegIndex, Address), 
+    Lw(RegIndex, Address),
+    Lb(RegIndex, Address),
+    Lbu(RegIndex, Address),
+    Stw(Address, RegIndex),
+    Stb(Address, RegIndex),
 
     Add(RegIndex, RegIndex, RegIndex),
     Sub(RegIndex, RegIndex, RegIndex),
     Mul(RegIndex, RegIndex, RegIndex),
     Rem(RegIndex, RegIndex, RegIndex),
     Cmp(RegIndex, RegIndex),
-
-    Lw(RegIndex, Address),
-    Lb(RegIndex, Address),
-    Lbu(RegIndex, Address),
-    St(Address, RegIndex),
 
     Nop,
     Halt

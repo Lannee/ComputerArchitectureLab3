@@ -24,7 +24,7 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
             },
-            Out(target, value) => {
+            Out(port, value) => {
 
             },
             Jmp(address) => {
@@ -33,6 +33,12 @@ impl<'a> Decoder<'a> {
             },
             Be(address) => {
                 if self.cu.datapath.alu.zero_flag {
+                    self.select_ip_input(IpSelect::FromInstruction(*address as usize));
+                }
+                self.cu.tick();
+            },
+            Bg(address) => {
+                if !self.cu.datapath.alu.zero_flag && !self.cu.datapath.alu.neg_flag {
                     self.select_ip_input(IpSelect::FromInstruction(*address as usize));
                 }
                 self.cu.tick();
@@ -99,7 +105,10 @@ impl<'a> Decoder<'a> {
             Lbu(target, address) => {
 
             },
-            St(target, address) => {
+            Stw(target, address) => {
+
+            },
+            Stb(target, address) => {
 
             },
             Nop => self.cu.tick(),

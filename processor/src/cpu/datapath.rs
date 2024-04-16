@@ -79,7 +79,7 @@ impl DataPath {
             ALUoR5 => self.reg5.value = self.alu.output,
             ALUoR6 => self.reg6.value = self.alu.output,
             ALUoR7 => self.reg7.value = self.alu.output,
-            
+
             DecALUl(value) => self.alu.left_input = value,
             AddrR => self.addr_reg.value = self.alu.output as usize,
             WriteB => self.memory.write(self.addr_reg.value, self.alu.output as u8),
@@ -136,7 +136,8 @@ pub struct ALU {
     pub right_input: u32,
     pub output: u32,
 
-    pub zero_flag: bool, 
+    pub zero_flag: bool,
+    pub neg_flag: bool, 
 }
 
 impl ALU {
@@ -146,7 +147,8 @@ impl ALU {
             right_input: 0, 
             output: 0,
 
-            zero_flag: false,
+            zero_flag: true,
+            neg_flag: false,
         };
 
         alu.set_flags();
@@ -167,6 +169,7 @@ impl ALU {
 
     fn set_flags(&mut self) {
         self.zero_flag = self.output == 0;
+        self.neg_flag = is_sign_bit_set(self.output);
     }
 
     fn tick(&mut self) {
@@ -200,4 +203,9 @@ impl ALUOperation {
 pub enum ALUFlag {
     Zero,
 
+}
+
+
+fn is_sign_bit_set(value: u32) -> bool {
+    value & (1 << u32::BITS) == 1
 }
