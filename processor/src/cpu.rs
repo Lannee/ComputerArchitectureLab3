@@ -1,19 +1,24 @@
-use self::{clock::Clock, datapath::*, memory::Memory, register::*};
-use crate::input::machine_code::{Data, Instruction, Instructions};
+use self::{clock::Clock, datapath::*, memory::Memory, ports::IOInterface, register::*};
+use crate::{cpu::decoder::Decoder, errors::ExecutionError, input::machine_code::{Data, Instruction, Instructions}};
 
 pub mod register;
 pub mod datapath;
 pub mod clock;
 pub mod decoder;
 pub mod memory;
+pub mod ports;
 
 const DATA_MEMORY_CAPACITY: usize = 1024;
+const INSTRUCTION_MEMORY_CAPACITY: usize = 1024;
 
 pub struct CPU {
     pub datapath: DataPath,
     pub clock: Clock,
     pub ip: Register<usize>,
     pub instr_memory: Memory<Instruction>,
+
+    pub io: IOInterface,
+    int: bool,
 }
 
 impl CPU {
@@ -31,12 +36,43 @@ impl CPU {
         
                 addr_reg: Register::<usize>::new(),
         
-                alu: ALU { left_input: 0, right_input: 0, output: 0 },
-                memory: Memory::from_data_with_spec_size(data, DATA_MEMORY_CAPACITY)
+                alu: ALU::new(),
+                memory: Memory::from_data_with_spec_size(data, DATA_MEMORY_CAPACITY),
             },
             clock: Clock(0),
             ip: Register::<usize>::new(),
-            instr_memory: Memory::from_data_with_spec_size(instructions, DATA_MEMORY_CAPACITY),
+            instr_memory: Memory::from_data_with_spec_size(instructions, INSTRUCTION_MEMORY_CAPACITY),
+
+            io: IOInterface::new(),
+            int: false,
         }
     }
+
+    pub fn start(mut self) -> Result<(), ExecutionError> {
+        let cpu_mut = unsafe { ::you_can::borrow_unchecked(&mut self) };
+
+
+        let mut decoder = Decoder::new(cpu_mut);
+
+        loop {
+            let instruction = self.instr_memory.read(self.ip.value);
+            decoder.select_ip_input(decoder::IpSelect::Inc);
+
+            if let Some(ProcSig::Halt) = decoder.execute_instruction(instruction)? {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn tick(&mut self) {
+        self.clock.tick();
+        self.datapath.tick();
+        self.io.tick();
+    }
+}
+
+
+pub enum ProcSig {
+    Halt
 }

@@ -65,4 +65,4 @@ fn file_name_as_json(file_name: &str) -> String {
 
 
 #[derive(Deserialize)]
-pub struct Interupt(usize, char);
+pub struct Interupt(pub usize, pub char);

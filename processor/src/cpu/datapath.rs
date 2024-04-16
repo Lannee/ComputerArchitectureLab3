@@ -1,7 +1,7 @@
 use crate::input::machine_code::Instruction;
 use crate::new_register32;
 
-use super::memory::Memory;
+use super::memory::{ByteMemory, Memory};
 use super::{Register, Register32};
 
 
@@ -18,7 +18,7 @@ pub struct DataPath {
     pub addr_reg: Register<usize>,
 
     pub alu: ALU,
-    pub memory: Memory<u8>,
+    pub memory: ByteMemory,
 }
 
 impl DataPath {
@@ -79,8 +79,19 @@ impl DataPath {
             ALUoR5 => self.reg5.value = self.alu.output,
             ALUoR6 => self.reg6.value = self.alu.output,
             ALUoR7 => self.reg7.value = self.alu.output,
+            
             DecALUl(value) => self.alu.left_input = value,
+            AddrR => self.addr_reg.value = self.alu.output as usize,
+            WriteB => self.memory.write(self.addr_reg.value, self.alu.output as u8),
+            WriteW => self.memory.write_w(self.addr_reg.value, self.alu.output),
+            ReadB => self.alu.output = *self.memory.read(self.addr_reg.value) as u32,
+            ReadW => self.alu.output = self.memory.read_w(self.addr_reg.value),
         }
+    }
+
+
+    pub fn tick(&mut self) {
+        self.alu.tick();
     }
 }
 
@@ -112,6 +123,11 @@ pub enum Latch {
     ALUoR7,
 
     DecALUl(u32),
+    AddrR,
+    WriteB,
+    WriteW,
+    ReadB,
+    ReadW,
 }
 
 
@@ -120,10 +136,23 @@ pub struct ALU {
     pub right_input: u32,
     pub output: u32,
 
-    // flags: 
+    pub zero_flag: bool, 
 }
 
 impl ALU {
+    pub fn new() -> ALU {
+        let mut alu = ALU { 
+            left_input: 0, 
+            right_input: 0, 
+            output: 0,
+
+            zero_flag: false,
+        };
+
+        alu.set_flags();
+        alu
+    }
+
     pub fn execute_operation(&mut self, operation: ALUOperation) {
         use ALUOperation::*;
         self.output = match operation {
@@ -131,8 +160,18 @@ impl ALU {
             Sub => self.left_input - self.right_input,
             Mul => self.left_input * self.right_input,
             Rem => self.left_input % self.right_input,
-            Cmp => self.left_input - self.right_input,
         };
+
+        self.set_flags();
+    }
+
+    fn set_flags(&mut self) {
+        self.zero_flag = self.output == 0;
+    }
+
+    fn tick(&mut self) {
+        self.left_input = u32::default();
+        self.right_input = u32::default();
     }
 }
 
@@ -142,8 +181,6 @@ pub enum ALUOperation {
     Sub,
     Mul,
     Rem,
-    Cmp,
-
 }
 
 impl ALUOperation {
