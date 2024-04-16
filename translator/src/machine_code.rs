@@ -10,6 +10,8 @@ pub type Labels = HashMap<Label, Address>;
 
 pub type Address = u32;
 pub type Label = String;
+pub type PortIndex = usize;
+
 
 
 #[derive(Serialize)]

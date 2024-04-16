@@ -4,7 +4,7 @@ pub mod commands;
 use register::*;
 
 pub static PROCESSOR: ProcEntries = ProcEntries {
-    registers: &[REG0, REG1],
+    registers: &[REG0, REG1, REG2, REG3, REG4, REG5, REG6, REG7],
 };
 
 pub struct ProcEntries<'a> {

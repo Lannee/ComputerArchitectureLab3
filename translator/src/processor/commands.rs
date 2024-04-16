@@ -3,7 +3,7 @@ use std::{num::IntErrorKind, str::FromStr};
 
 use crate::errors::LinkError;
 use crate::{errors::ParseError, machine_code::Label};
-use crate::machine_code::Address;
+use crate::machine_code::{Address, PortIndex};
 use crate::translator::format::*;
 use crate::processor::PROCESSOR;
 
@@ -12,17 +12,35 @@ use super::GlobRegister;
 use regex::Regex;
 use serde::{Serialize, Serializer};
 
+
+
 #[derive(Serialize, Clone)]
 pub enum Instruction {
     Mov(&'static GlobRegister, &'static GlobRegister),
     Movn(&'static GlobRegister, i32),
 
-    In(&'static GlobRegister, &'static GlobRegister),
-    Out(&'static GlobRegister, &'static GlobRegister),
+    // In(&'static GlobRegister, &'static GlobRegister),
+    Out(PortIndex, &'static GlobRegister),
 
     Jmp(Mark<Address>),
+    Be(Mark<Address>),
+    Bg(Mark<Address>),
 
-    La(&'static GlobRegister, Mark<Address>)
+    La(&'static GlobRegister, Mark<Address>),
+    Lw(&'static GlobRegister, Mark<Address>),
+    Lb(&'static GlobRegister, Mark<Address>),
+    Lbu(&'static GlobRegister, Mark<Address>),
+    Stw(Mark<Address>, &'static GlobRegister),
+    Stb(Mark<Address>, &'static GlobRegister),
+
+    Add(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
+    Sub(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
+    Mul(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
+    Rem(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
+    Cmp(&'static GlobRegister, &'static GlobRegister),
+
+    Nop,
+    Halt
 }
 
 impl FromStr for Instruction {
@@ -39,8 +57,24 @@ impl FromStr for Instruction {
             "movn" => Self::init_movn(args),
             "out" => Self::init_out(args),
             "jmp" => Self::init_jmp(args),
+            "be" => Self::init_be(args),
+            "bg" => Self::init_bg(args),
 
             "la" => Self::init_la(args),
+            "lw" => Self::init_lw(args),
+            "lb" => Self::init_lb(args),
+            "lbu" => Self::init_lbu(args),
+            "stw" => Self::init_stw(args),
+            "stb" => Self::init_stb(args),
+
+            "add" => Self::init_add(args),
+            "sub" => Self::init_add(args),
+            "mul" => Self::init_add(args),
+            "rem" => Self::init_add(args),
+            "cmp" => Self::init_cmp(args),
+
+            "nop" => Ok(Self::Nop),
+            "halt" => Ok(Self::Halt),
 
             "" => Err(ParseError::EmptyLineAsCommand),
             _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
@@ -57,6 +91,12 @@ impl Instruction {
         use Instruction::*;
         match self {
             La(_, _) => true,
+            Lw(_, _) => true,
+            Lb(_, _) => true,
+            Lbu(_, _) => true,
+            Stw(_, _) => true,
+            Stb(_, _) => true,
+
             _ => false
         }
     }
@@ -65,6 +105,8 @@ impl Instruction {
         use Instruction::*;
         match self {
             Jmp(_) => true,
+            Be(_) => true,
+            Bg(_) => true,
             _ => false
         }
     }
@@ -73,7 +115,14 @@ impl Instruction {
         use Instruction::*;
         match self {
             Jmp(mark) => Some(mark),
+            Be(mark) => Some(mark),
+            Bg(mark) => Some(mark),
             La(_, mark) => Some(mark),
+            Lw(_, mark) => Some(mark),
+            Lb(_, mark) => Some(mark),
+            Lbu(_, mark) => Some(mark),
+            Stw(mark, _) => Some(mark),
+            Stb(mark, _) => Some(mark),
             _ => None
         }
     }
@@ -82,7 +131,14 @@ impl Instruction {
         use Instruction::*;
         match self {
             Jmp(_) => Ok(Jmp(mark)),
+            Be(_) => Ok(Be(mark)),
+            Bg(_) => Ok(Bg(mark)),
             La(target, _) => Ok(La(target, mark)),
+            Lw(target, _) => Ok(Lw(target, mark)),
+            Lb(target, _) => Ok(Lb(target, mark)),
+            Lbu(target, _) => Ok(Lbu(target, mark)),
+            Stw(_, source) => Ok(Stw(mark, source)),
+            Stb(_, source) => Ok(Stb(mark, source)),
             _ => Err(LinkError::UnmarkableInstruction)
         }
     }
@@ -108,7 +164,10 @@ impl Instruction {
     fn init_out(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
-        Ok(Instruction::Out(get_register(args[0])?, get_register(args[1])?))
+        Ok(Instruction::Out(
+                args[0].parse()
+                    .map_err(|_| ParseError::InvalidCommandArgumants)?, 
+            get_register(args[1])?))
     }
 
     fn init_jmp(args: &[&str]) -> Result<Instruction, ParseError> {
@@ -121,8 +180,32 @@ impl Instruction {
                 _ => Ok(Instruction::Jmp(Mark::Label(args[0].to_owned())))
             }
         }
-
     }
+
+    fn init_be(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Be(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Be(Mark::Label(args[0].to_owned())))
+            }
+        }
+    }
+
+    fn init_bg(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Bg(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Bg(Mark::Label(args[0].to_owned())))
+            }
+        }
+    }
+
 
     fn init_la(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
@@ -136,7 +219,125 @@ impl Instruction {
                 _ => Ok(Instruction::La(target, Mark::Label(args[1].to_owned())))
             }
         }
+    }
 
+    fn init_lw(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        let target = get_register(args[0])?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Lw(target, Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Lw(target, Mark::Label(args[1].to_owned())))
+            }
+        }
+    }
+
+    fn init_lb(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        let target = get_register(args[0])?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Lb(target, Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Lb(target, Mark::Label(args[1].to_owned())))
+            }
+        }
+    }
+
+    fn init_lbu(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        let target = get_register(args[0])?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Lbu(target, Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Lbu(target, Mark::Label(args[1].to_owned())))
+            }
+        }
+    }
+
+    fn init_stw(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        let source = get_register(args[0])?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Stw(Mark::Address(ok), source)),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Stw(Mark::Label(args[1].to_owned()), source))
+            }
+        }
+    }
+
+    fn init_stb(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        let source = get_register(args[0])?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Stb(Mark::Address(ok), source)),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Stb(Mark::Label(args[1].to_owned()), source))
+            }
+        }
+    }
+
+    fn init_add(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 3)?;
+
+        Ok(Instruction::Add(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+            get_register(args[2])?
+        ))
+    }
+
+    fn init_sub(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 3)?;
+
+        Ok(Instruction::Sub(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+            get_register(args[2])?
+        ))
+    }
+
+    fn init_mul(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 3)?;
+
+        Ok(Instruction::Mul(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+            get_register(args[2])?
+        ))
+    }
+
+    fn init_rem(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 3)?;
+
+        Ok(Instruction::Rem(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+            get_register(args[2])?
+        ))
+    }
+
+    fn init_cmp(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::Cmp(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+        ))
     }
 
 }
@@ -148,7 +349,7 @@ impl fmt::Display for Instruction {
         match self {
             Mov(target, from) => write!(f, ""),
             Movn(target, value) => write!(f, ""),
-            In(target, from) => write!(f, ""),
+            // In(target, from) => write!(f, ""),
             Out(target, from) => write!(f, ""),
             _ => write!(f, ""),
         }  
