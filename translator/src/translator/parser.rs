@@ -12,7 +12,7 @@ use crate::input::SourceCode;
 use crate::translator::format::*;
 
 
-pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>), ParseError> {
+pub fn parse(code: &SourceCode) -> Result<RawInctructions, ParseError> {
 
     let code = code.trim();
 
@@ -39,25 +39,10 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
                         _ => true     
                     }
                 }).map(|command| {
-                    match command? {
-                        DataCommand::Byte(value) => {
-                            *byte_counter.borrow_mut() += 1;
-                            Ok(vec![value])
-                        },
-                        DataCommand::Str(str) => {
-                            let c_fmt_str = CString::new(str).unwrap();
-                            let bytes = c_fmt_str.as_bytes_with_nul();
-                            *byte_counter.borrow_mut() += bytes.len() as u32;
-                            Ok(bytes.to_vec())
-                        }
-                        _ => Err(ParseError::InstructionInDataSection),
-                    }
-                }).collect::<Result<Vec<Data>, ParseError>>()
-                .map(|vec| {
-                    vec.into_iter()
-                        .flatten()
-                        .collect::<Data>()
-                })
+                    let command = command?;
+                    *byte_counter.borrow_mut() += command.get_size();
+                    Ok(command)
+                }).collect::<Result<Vec<DataCommand>, ParseError>>()
             });
 
     let data = match data {
@@ -97,40 +82,108 @@ pub fn parse(code: &SourceCode) -> Result<(Option<RawInctructions>, Option<Data>
         None => None
     };
 
-    Ok((
-        instructions.map(|instructions| {
-            RawInctructions::new(instructions, instructions_labels, data_labels)
-        }), 
-        data
-    ))
+    // Ok((
+    //     instructions.map(|instructions| {
+    //         RawInctructions::new(instructions, instructions_labels, data_labels)
+    //     }), 
+    //     data
+    // ))
+    Ok(RawInctructions::new(instructions, data, instructions_labels, data_labels))
 }
 
 
-pub fn link(raw_instructions: RawInctructions) -> Result<Inctructions, LinkError> {
-    raw_instructions.instructions.iter()
-        .map(|instruction| {
-            Ok(
-                if instruction.can_contain_label() {
-                    let mark = instruction.get_mark().unwrap();
-
-                    let label = mark.get_label().unwrap();
-
-                    let address = if instruction.is_data_referencing() {
-                            let address = raw_instructions.data_labels.get(label);
-                            if let None = address {return Err(LinkError::UndefinedDataLabel(label.to_owned()))}
-                            address.unwrap()
+pub fn link(raw_instructions: RawInctructions) -> Result<MachineCode, LinkError> {
+    let instructions = 
+        raw_instructions.instructions
+            .map(|instructions| {
+                instructions.iter()
+                    .map(|instruction| {
+                    Ok(
+                        if instruction.can_contain_label() {
+                            let mark = instruction.get_mark().unwrap();
+        
+                            let label = mark.get_label().unwrap();
+        
+                            let address = if instruction.is_data_referencing() {
+                                    let address = raw_instructions.data_labels.get(label);
+                                    if let None = address {return Err(LinkError::UndefinedDataLabel(label.to_owned()))}
+                                    address.unwrap()
+                                } else {
+                                    let address = raw_instructions.instructions_labels.get(label);
+                                    if let None = address {return Err(LinkError::UndefinedInstructionLabel(label.to_owned()))}
+                                    address.unwrap()
+                                };
+                            
+                            instruction.set_mark(Mark::Address(*address))?
                         } else {
-                            let address = raw_instructions.instructions_labels.get(label);
-                            if let None = address {return Err(LinkError::UndefinedInstructionLabel(label.to_owned()))}
-                            address.unwrap()
-                        };
-                    
-                    instruction.set_mark(Mark::Address(*address))?
-                } else {
-                    instruction.clone()
-                }
-            )
-        }).collect::<Result<Inctructions, LinkError>>()
+                            instruction.clone()
+                        }
+                    )
+                }).collect::<Result<Inctructions, LinkError>>()
+            });
+    let instructions = match instructions {
+        Some(instructions) => Some(instructions?),
+        None => None
+    };
+
+    let data = 
+        raw_instructions.data
+            .map(|commands| {
+                commands.iter()
+                    .map(|command| {
+                        Ok(
+                            if command.can_contain_label() {
+                                let mark = command.get_mark().unwrap();
+            
+                                let label = mark.get_label().unwrap();
+            
+                                let address = if command.is_data_referencing() {
+                                        let address = raw_instructions.data_labels.get(label);
+                                        if let None = address {return Err(LinkError::UndefinedDataLabel(label.to_owned()))}
+                                        address.unwrap()
+                                    } else {
+                                        let address = raw_instructions.instructions_labels.get(label);
+                                        if let None = address {return Err(LinkError::UndefinedInstructionLabel(label.to_owned()))}
+                                        address.unwrap()
+                                    };
+                                
+                                command.set_mark(Mark::Address(*address))?
+                            } else {
+                                command.clone()
+                            }
+                        )
+                    })
+                    .map(|command| {
+                        match command? {
+                            DataCommand::Byte(value) => {
+                                Ok(vec![value])
+                            },
+                            DataCommand::Str(str) => {
+                                let c_fmt_str = CString::new(str).unwrap();
+                                let bytes = c_fmt_str.as_bytes_with_nul();
+                                Ok(bytes.to_vec())
+                            },
+                            DataCommand::Vec(address) => {
+                                match address {
+                                    Mark::Address(addr) => Ok(addr.to_le_bytes().to_vec()),
+                                    Mark::Label(label) => Err(LinkError::UnresolvedInstruction(label))
+                                }
+                            }
+                        }
+                    }).collect::<Result<Vec<Data>, LinkError>>()
+                    .map(|vec| {
+                        vec.into_iter()
+                            .flatten()
+                            .collect::<Data>()
+                    })
+            });
+    let data = match data {
+        Some(data) => Some(data?),
+        None => None
+    };
+
+    Ok(MachineCode::new(instructions, data))
+
 }
 
 

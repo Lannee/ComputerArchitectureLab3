@@ -387,10 +387,11 @@ fn check_args_len(args: &[&str], expexted: usize) -> Result<(), ParseError> {
 }
 
 
-
+#[derive(Clone)]
 pub enum DataCommand {
     Byte(u8),
-    Str(String)
+    Str(String),
+    Vec(Mark<Address>)
 }
 
 impl FromStr for DataCommand {
@@ -406,9 +407,46 @@ impl FromStr for DataCommand {
             "byte" => Self::init_byte(args),
             "char" => Self::init_char(args),
             "str" => Self::init_str(args),
+            "vec" => Self::init_vec(args),
 
             "" => Err(ParseError::EmptyLineAsCommand),
             _ => Err(ParseError::NoSuchCommand(token_elements.0.to_owned()))
+        }
+    }
+}
+
+impl DataCommand {
+    pub fn can_contain_label(&self) -> bool {
+        self.is_data_referencing() || self.is_instruction_referencing()
+    }
+
+    pub fn is_data_referencing(&self) -> bool {
+        match self {
+            _ => false
+        }
+    }
+
+    pub fn is_instruction_referencing(&self) -> bool {
+        use DataCommand::*;
+        match self {
+            Vec(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn get_mark(&self) -> Option<&Mark<Address>> {
+        use DataCommand::*;
+        match self {
+            Vec(mark) => Some(mark),
+            _ => None
+        }
+    }
+
+    pub fn set_mark(&self, mark: Mark<Address>) -> Result<DataCommand, LinkError> {
+        use DataCommand::*;
+        match self {
+            Vec(_) => Ok(Vec(mark)),
+            _ => Err(LinkError::UnmarkableInstruction)
         }
     }
 }
@@ -441,6 +479,23 @@ impl DataCommand {
         Ok(DataCommand::Str(
             args[0].to_owned()
         ))
+    }
+
+    fn init_vec(args: &[&str]) -> Result<DataCommand, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(DataCommand::Vec(
+            Mark::Label(args[0].to_owned())
+        ))
+    }
+
+    pub fn get_size(&self) -> usize {
+        use DataCommand::*;
+        match self {
+            Byte(_) => 1,
+            Str(str) => str.len() + 1,
+            Vec(_) => 32 / 8
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::processor::commands::Instruction;
+use crate::processor::commands::{DataCommand, Instruction};
 use std::collections::HashMap;
 
 use serde::Serialize;
@@ -8,7 +8,7 @@ pub type Inctructions = Vec<Instruction>;
 pub type Data = Vec<u8>;
 pub type Labels = HashMap<Label, Address>;
 
-pub type Address = u32;
+pub type Address = usize;
 pub type Label = String;
 pub type PortIndex = usize;
 
@@ -32,15 +32,17 @@ impl MachineCode {
 
 
 pub struct RawInctructions {
-    pub instructions: Inctructions,
+    pub instructions: Option<Inctructions>,
+    pub data: Option<Vec<DataCommand>>,
     pub instructions_labels: Labels,
     pub data_labels: Labels,
 }
 
 impl RawInctructions {
-    pub fn new(instructions: Inctructions, instructions_labels: Labels, data_labels: Labels) -> RawInctructions {
+    pub fn new(instructions: Option<Inctructions>, data: Option<Vec<DataCommand>>, instructions_labels: Labels, data_labels: Labels) -> RawInctructions {
         RawInctructions {
             instructions,
+            data,
             instructions_labels,
             data_labels
         }

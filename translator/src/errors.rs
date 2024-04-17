@@ -78,7 +78,8 @@ impl fmt::Display for ParseError {
 pub enum LinkError {
     UnmarkableInstruction,
     UndefinedDataLabel(String),
-    UndefinedInstructionLabel(String)
+    UndefinedInstructionLabel(String),
+    UnresolvedInstruction(String),
 }
 
 impl fmt::Display for LinkError {
