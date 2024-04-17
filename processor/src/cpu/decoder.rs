@@ -6,7 +6,7 @@ use crate::{latch_reg_in, latch_reg_out_l, latch_reg_out_r, reg_out_latch};
 
 
 pub struct Decoder<'a> {
-    pub cu: &'a mut CPU,
+    pub cu: &'a mut CPU<'a>,
 }
 
 
@@ -128,7 +128,7 @@ impl<'a> Decoder<'a> {
             }
     }
 
-    pub fn new(cu: &'a mut CPU) -> Decoder<'a> {
+    pub fn new(cu: &'a mut CPU<'a>) -> Decoder<'a> {
         Decoder {
             cu
         }

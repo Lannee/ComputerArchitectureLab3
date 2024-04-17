@@ -11,18 +11,18 @@ pub mod ports;
 const DATA_MEMORY_CAPACITY: usize = 1024;
 const INSTRUCTION_MEMORY_CAPACITY: usize = 1024;
 
-pub struct CPU {
+pub struct CPU<'a> {
     pub datapath: DataPath,
     pub clock: Clock,
     pub ip: Register<usize>,
     pub instr_memory: Memory<Instruction>,
 
-    pub io: IOInterface,
+    pub io: IOInterface<'a>,
     int: bool,
 }
 
-impl CPU {
-    pub fn new(instructions: Instructions, data: Data) -> CPU {
+impl<'a> CPU<'a> {
+    pub fn new(instructions: Instructions, data: Data) -> CPU<'a> {
         CPU {
             datapath: DataPath {
                 reg0: Register32::new(),

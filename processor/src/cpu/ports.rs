@@ -1,69 +1,72 @@
-use std::{cell::RefCell, ops::Deref, rc::Rc};
-
 use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 
 use crate::out_device::Device;
 
-
-
-
-pub struct Port {
+pub struct Port<'a> {
     pub data: u8,
-    device: Option<Rc<RefCell<Device>>>
+    device: Option<Device<'a>>
 }
 
-impl Port {
-    pub fn new(device: Option<Rc<RefCell<Device>>>) -> Port {
+impl<'a> Port<'a> {
+    pub fn new(device: Option<Device>) -> Port {
         Port {
             data: u8::default(),
             device,
         }
     }
 
-    pub fn out(&mut self, data: u8) {
+    pub fn _out(&mut self, data: u8) {
         self.data = data;
+        if let Some(dev) = &mut self.device {
+            dev._in(data);
+        }
+    }
+
+    pub fn _in(&mut self, data: u8) {
+
     }
 
     pub fn tick(&mut self) {
         if let Some(device) = &mut self.device {
-            device.deref().borrow_mut().tick()
+            device.tick()
         }
     }
 }
 
 
 
-pub struct IOInterface {
-    port1: Rc<RefCell<Port>>,
-    port2: Rc<RefCell<Port>>
+pub struct IOInterface<'a> {
+    port1: Port<'a>,
+    port2: Port<'a>
 }
 
-impl IOInterface {
-    pub fn new() -> IOInterface {
+impl<'a> IOInterface<'a> {
+    pub fn new() -> IOInterface<'a> {
         IOInterface {
-            port1: Rc::new(RefCell::new(Port::new(None))),
-            port2: Rc::new(RefCell::new(Port::new(None)))
+            port1: Port::new(None),
+            port2: Port::new(None)
         }
     }
 
-    pub fn connect_device(&mut self, port: PortSelect, dev: Rc<RefCell<Device>>) {
+    #[you_can::turn_off_the_borrow_checker]
+    pub fn connect_device(&mut self, port: PortSelect, mut dev: Device<'a>) {
         match port {
             PortSelect::Port0 => {
-                dev.deref().borrow_mut().port = Some(Rc::clone(&self.port1));
-                self.port1.deref().borrow_mut().device = Some(dev);
+                dev.port = Some(&mut self.port1);
+                self.port1.device = Some(dev);
             },
             PortSelect::Port1 => {
-                dev.deref().borrow_mut().port = Some(Rc::clone(&self.port2));
-                self.port2.deref().borrow_mut().device = Some(dev);
+                dev.port = Some(&mut self.port2);
+                self.port2.device = Some(dev);
             }
         }
     }
 
     pub fn tick(&mut self) {
-        self.port1.deref().borrow_mut().tick();
-        self.port2.deref().borrow_mut().tick();
+        self.port1.tick();
+        self.port2.tick();
     }
 }
 

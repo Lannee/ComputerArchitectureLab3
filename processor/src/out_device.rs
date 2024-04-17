@@ -1,17 +1,15 @@
-use std::{cell::RefCell, ops::Deref, rc::Rc};
-
 use crate::{cpu::ports::Port, input::IntSchedule};
 
 
-pub struct Device {
+pub struct Device<'a> {
     schedule: IntSchedule,
-    pub port: Option<Rc<RefCell<Port>>>,
+    pub port: Option<&'a mut Port<'a>>,
 
     _tick: usize,
 }
 
-impl Device {
-    pub fn new(schedule: IntSchedule, port: Option<Rc<RefCell<Port>>>) -> Device {
+impl<'a> Device<'a> {
+    pub fn new(schedule: IntSchedule, port: Option<&'a mut Port<'a>>) -> Device<'a> {
         Device {
             schedule,
             port,
@@ -22,15 +20,18 @@ impl Device {
 
     pub fn tick(&mut self) {
         if let Some(data) = self.schedule.iter().filter(|interupt| interupt.0 == self._tick).next() {
-            self.out(data.1 as u8);
+            self._out(data.1 as u8);
         }
         self._tick += 1;
     }
 
-    fn out(&mut self, data: u8) {
-        match &self.port {
-            Some(port) => port.deref().borrow_mut().out(data),
-            None => {}
+    pub fn _in(&mut self, data: u8) {
+        println!("{}", data as char);
+    }
+
+    pub fn _out(&mut self, data: u8) {
+        if let Some(port) = &mut self.port {
+            port._out(data);
         }
     }
 }

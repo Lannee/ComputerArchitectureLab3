@@ -41,6 +41,6 @@ impl ByteMemory {
     }
 
     pub fn write_w(&mut self, index: usize, value: u32) {
-        value.to_le_bytes().iter().enumerate().map(|(i, x)| self.write(index + i, *x));
+        value.to_le_bytes().iter().enumerate().for_each(|(i, x)| self.write(index + i, *x));
     }
 }

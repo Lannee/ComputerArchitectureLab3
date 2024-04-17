@@ -207,5 +207,5 @@ pub enum ALUFlag {
 
 
 fn is_sign_bit_set(value: u32) -> bool {
-    value & (1 << u32::BITS) == 1
+    value & (1 << u32::BITS-1) == 1
 }
