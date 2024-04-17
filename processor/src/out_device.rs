@@ -1,6 +1,7 @@
 use crate::{cpu::ports::Port, input::IntSchedule};
 
 
+#[derive(Debug)]
 pub struct Device<'a> {
     schedule: IntSchedule,
     pub port: Option<&'a mut Port<'a>>,
@@ -26,12 +27,12 @@ impl<'a> Device<'a> {
     }
 
     pub fn _in(&mut self, data: u8) {
-        println!("{}", data as char);
+        print!("{}", data as char);
     }
 
     pub fn _out(&mut self, data: u8) {
         if let Some(port) = &mut self.port {
-            port._out(data);
+            port._in(data);
         }
     }
 }

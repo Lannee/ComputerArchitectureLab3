@@ -128,9 +128,11 @@ pub enum Latch {
     WriteW,
     ReadB,
     ReadW,
+
+    // InOut
 }
 
-
+#[derive(Debug)]
 pub struct ALU {
     pub left_input: u32,
     pub right_input: u32,
@@ -162,6 +164,9 @@ impl ALU {
             Sub => self.left_input - self.right_input,
             Mul => self.left_input * self.right_input,
             Rem => self.left_input % self.right_input,
+            And => self.left_input & self.right_input,
+            Inc => self.output + 1,
+            Xor => self.left_input ^ self.right_input,
         };
 
         self.set_flags();
@@ -184,6 +189,9 @@ pub enum ALUOperation {
     Sub,
     Mul,
     Rem,
+    And,
+    Inc,
+    Xor
 }
 
 impl ALUOperation {

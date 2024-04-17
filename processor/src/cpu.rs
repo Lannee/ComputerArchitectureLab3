@@ -69,6 +69,7 @@ impl<'a> CPU<'a> {
         self.clock.tick();
         self.datapath.tick();
         self.io.tick();
+        // println!("tick");
     }
 }
 

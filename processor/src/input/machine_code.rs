@@ -17,7 +17,7 @@ pub struct MachineCode {
 }
 
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub enum Instruction {
     Mov(RegIndex, RegIndex),
     Movn(RegIndex, i32),
@@ -31,15 +31,20 @@ pub enum Instruction {
     La(RegIndex, Address), 
     Lw(RegIndex, Address),
     Lb(RegIndex, Address),
+    Lbi(RegIndex, RegIndex),
     Lbu(RegIndex, Address),
+    Lbui(RegIndex, RegIndex),
     Stw(Address, RegIndex),
     Stb(Address, RegIndex),
 
+    Inc(RegIndex),
     Add(RegIndex, RegIndex, RegIndex),
     Sub(RegIndex, RegIndex, RegIndex),
     Mul(RegIndex, RegIndex, RegIndex),
     Rem(RegIndex, RegIndex, RegIndex),
+    And(RegIndex, RegIndex, RegIndex),
     Cmp(RegIndex, RegIndex),
+    Test(RegIndex, RegIndex),
 
     Nop,
     Halt

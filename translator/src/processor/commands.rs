@@ -29,15 +29,19 @@ pub enum Instruction {
     La(&'static GlobRegister, Mark<Address>),
     Lw(&'static GlobRegister, Mark<Address>),
     Lb(&'static GlobRegister, Mark<Address>),
+    Lbi(&'static GlobRegister, &'static GlobRegister),
     Lbu(&'static GlobRegister, Mark<Address>),
     Stw(Mark<Address>, &'static GlobRegister),
     Stb(Mark<Address>, &'static GlobRegister),
 
+    Inc(&'static GlobRegister),
     Add(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
     Sub(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
     Mul(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
     Rem(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
+    And(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
     Cmp(&'static GlobRegister, &'static GlobRegister),
+    Test(&'static GlobRegister, &'static GlobRegister),
 
     Nop,
     Halt
@@ -63,15 +67,19 @@ impl FromStr for Instruction {
             "la" => Self::init_la(args),
             "lw" => Self::init_lw(args),
             "lb" => Self::init_lb(args),
+            "lbi" => Self::init_lbi(args),
             "lbu" => Self::init_lbu(args),
             "stw" => Self::init_stw(args),
             "stb" => Self::init_stb(args),
 
+            "inc" => Self::init_inc(args),
             "add" => Self::init_add(args),
             "sub" => Self::init_add(args),
             "mul" => Self::init_add(args),
             "rem" => Self::init_add(args),
+            "and" => Self::init_and(args),
             "cmp" => Self::init_cmp(args),
+            "test" => Self::init_test(args),
 
             "nop" => Ok(Self::Nop),
             "halt" => Ok(Self::Halt),
@@ -249,6 +257,12 @@ impl Instruction {
         }
     }
 
+    fn init_lbi(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::Lbi(get_register(args[0])?, get_register(args[1])?))
+    }
+
     fn init_lbu(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
@@ -291,6 +305,14 @@ impl Instruction {
         }
     }
 
+    fn init_inc(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(Instruction::Inc(
+            get_register(args[0])?,
+        ))
+    }
+
     fn init_add(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 3)?;
 
@@ -331,10 +353,29 @@ impl Instruction {
         ))
     }
 
+    fn init_and(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 3)?;
+
+        Ok(Instruction::And(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+            get_register(args[2])?
+        ))
+    }
+
     fn init_cmp(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 2)?;
 
         Ok(Instruction::Cmp(
+            get_register(args[0])?, 
+            get_register(args[1])?, 
+        ))
+    }
+
+    fn init_test(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::Test(
             get_register(args[0])?, 
             get_register(args[1])?, 
         ))

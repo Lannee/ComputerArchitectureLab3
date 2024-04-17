@@ -4,6 +4,7 @@ use serde::Deserializer;
 
 use crate::out_device::Device;
 
+#[derive(Debug)]
 pub struct Port<'a> {
     pub data: u8,
     device: Option<Device<'a>>
@@ -36,17 +37,21 @@ impl<'a> Port<'a> {
 }
 
 
-
+#[derive(Debug)]
 pub struct IOInterface<'a> {
+    port0: Port<'a>,
     port1: Port<'a>,
-    port2: Port<'a>
+
+    pub selected: PortSelect,
 }
 
 impl<'a> IOInterface<'a> {
     pub fn new() -> IOInterface<'a> {
         IOInterface {
+            port0: Port::new(None),
             port1: Port::new(None),
-            port2: Port::new(None)
+
+            selected: PortSelect::Port0,
         }
     }
 
@@ -54,22 +59,34 @@ impl<'a> IOInterface<'a> {
     pub fn connect_device(&mut self, port: PortSelect, mut dev: Device<'a>) {
         match port {
             PortSelect::Port0 => {
-                dev.port = Some(&mut self.port1);
-                self.port1.device = Some(dev);
+                dev.port = Some(&mut self.port0);
+                self.port0.device = Some(dev);
             },
             PortSelect::Port1 => {
-                dev.port = Some(&mut self.port2);
-                self.port2.device = Some(dev);
+                dev.port = Some(&mut self.port1);
+                self.port1.device = Some(dev);
             }
         }
     }
 
     pub fn tick(&mut self) {
+        self.port0.tick();
         self.port1.tick();
-        self.port2.tick();
+    }
+
+    pub fn select_port(&mut self, port: PortSelect) {
+        self.selected = port;
+    }
+
+    pub fn send_data(&mut self, data: u8) {
+        match self.selected {
+            PortSelect::Port0 => self.port0._out(data),
+            PortSelect::Port1 => self.port1._out(data),
+        }
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum PortSelect {
     Port0,
     Port1,

@@ -16,7 +16,7 @@ fn main() -> Result<(), ProcessorError> {
     let dev0 = Device::new(schedule, None);
 
     let mut CPU = CPU::new(instructions, data);
-    CPU.io.connect_device(ports::PortSelect::Port1, dev0);
+    CPU.io.connect_device(ports::PortSelect::Port0, dev0);
 
     CPU.start().map_err(|err| ProcessorError::ExecutionError(err))?;
 

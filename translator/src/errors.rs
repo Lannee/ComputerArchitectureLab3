@@ -84,6 +84,12 @@ pub enum LinkError {
 
 impl fmt::Display for LinkError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        use LinkError::*;
+        match self {
+            UnmarkableInstruction => write!(f, "instruction cannot be marked"),
+            UndefinedDataLabel(label) => write!(f, "cannot define data label \"{label}\""),
+            UndefinedInstructionLabel(label) => write!(f, "cannot define instruction label \"{label}\""),
+            UnresolvedInstruction(label) => write!(f, "cannot resolve label \"{label}\""),
+        }
     }
 }
