@@ -7,7 +7,9 @@ use crate::out_device::Device;
 #[derive(Debug)]
 pub struct Port<'a> {
     pub data: u8,
-    device: Option<Device<'a>>
+    device: Option<Device<'a>>,
+
+    pub status: PortIOStatus
 }
 
 impl<'a> Port<'a> {
@@ -15,6 +17,7 @@ impl<'a> Port<'a> {
         Port {
             data: u8::default(),
             device,
+            status: PortIOStatus::None
         }
     }
 
@@ -26,7 +29,8 @@ impl<'a> Port<'a> {
     }
 
     pub fn _in(&mut self, data: u8) {
-
+        self.status = PortIOStatus::Input;
+        self.data = data;
     }
 
     pub fn tick(&mut self) {
@@ -43,6 +47,9 @@ pub struct IOInterface<'a> {
     port1: Port<'a>,
 
     pub selected: PortSelect,
+    pub data: u8,
+
+    pub status: PortIOStatus,
 }
 
 impl<'a> IOInterface<'a> {
@@ -52,6 +59,9 @@ impl<'a> IOInterface<'a> {
             port1: Port::new(None),
 
             selected: PortSelect::Port0,
+            data: 0,
+            
+            status: PortIOStatus::None,
         }
     }
 
@@ -72,24 +82,36 @@ impl<'a> IOInterface<'a> {
     pub fn tick(&mut self) {
         self.port0.tick();
         self.port1.tick();
+        
+        self.status = match self.selected {
+            PortSelect::Port0 => self.port0.status.clone(),
+            PortSelect::Port1 => self.port1.status.clone(),
+        }
     }
 
     pub fn select_port(&mut self, port: PortSelect) {
         self.selected = port;
     }
 
-    pub fn send_data(&mut self, data: u8) {
+    pub fn output(&mut self) {
         match self.selected {
-            PortSelect::Port0 => self.port0._out(data),
-            PortSelect::Port1 => self.port1._out(data),
+            PortSelect::Port0 => self.port0._out(self.data),
+            PortSelect::Port1 => self.port1._out(self.data),
         }
     }
 }
 
 #[derive(Clone, Debug)]
 pub enum PortSelect {
-    Port0,
-    Port1,
+    Port0 = 0,
+    Port1 = 1,
+}
+
+#[derive(Clone, Debug)]
+pub enum PortIOStatus {
+    Input,
+    Output,
+    None
 }
 
 

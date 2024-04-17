@@ -4,7 +4,7 @@ use crate::cpu::ports::PortSelect;
 
 
 pub type Data = Vec<u8>;
-type Address = u32;
+pub type Address = u32;
 type RegIndex = usize; 
 type PortIndex = usize;
 
@@ -22,6 +22,7 @@ pub enum Instruction {
     Mov(RegIndex, RegIndex),
     Movn(RegIndex, i32),
 
+    In(RegIndex),
     Out(PortSelect, RegIndex),
 
     Jmp(Address),
@@ -32,10 +33,10 @@ pub enum Instruction {
     Lw(RegIndex, Address),
     Lb(RegIndex, Address),
     Lbi(RegIndex, RegIndex),
-    Lbu(RegIndex, Address),
-    Lbui(RegIndex, RegIndex),
     Stw(Address, RegIndex),
     Stb(Address, RegIndex),
+    Stwi(RegIndex, RegIndex),
+    Stbi(RegIndex, RegIndex),
 
     Inc(RegIndex),
     Add(RegIndex, RegIndex, RegIndex),
@@ -45,6 +46,11 @@ pub enum Instruction {
     And(RegIndex, RegIndex, RegIndex),
     Cmp(RegIndex, RegIndex),
     Test(RegIndex, RegIndex),
+
+    Call(Address),
+    Ret,
+    Push(RegIndex),
+    Pop(RegIndex),
 
     Nop,
     Halt

@@ -1,4 +1,4 @@
-use crate::input::machine_code::Instructions;
+use crate::input::machine_code::{Address, Instructions};
 
 
 
@@ -17,12 +17,12 @@ impl<T: Default> Memory<T> {
 }
 
 impl<T> Memory<T> {
-    pub fn read(&self, index: usize) -> &T {
-        self.0.get(index).expect("Invalid address read!")
+    pub fn read(&self, index: Address) -> &T {
+        self.0.get(index as usize).expect("Invalid address read!")
     }
 
-    pub fn write(&mut self, index: usize, value: T) {
-        self.0[index] = value;
+    pub fn write(&mut self, index: Address, value: T) {
+        self.0[index as usize] = value;
     }
 }
 
@@ -30,7 +30,7 @@ impl<T> Memory<T> {
 pub type ByteMemory = Memory<u8>;
 
 impl ByteMemory {
-    pub fn read_w(&self, index: usize) -> u32 {
+    pub fn read_w(&self, index: Address) -> u32 {
         let bytes = [
             *self.read(index),
             *self.read(index + 1),
@@ -40,7 +40,7 @@ impl ByteMemory {
         u32::from_le_bytes(bytes)
     }
 
-    pub fn write_w(&mut self, index: usize, value: u32) {
-        value.to_le_bytes().iter().enumerate().for_each(|(i, x)| self.write(index + i, *x));
+    pub fn write_w(&mut self, index: Address, value: u32) {
+        value.to_le_bytes().iter().enumerate().for_each(|(i, x)| self.write(index + i as u32, *x));
     }
 }

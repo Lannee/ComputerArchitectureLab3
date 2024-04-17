@@ -1,6 +1,6 @@
-use std::fmt::Alignment;
+use std::{fmt::Alignment, mem};
 
-use crate::{cpu::{ALUOperation, Latch}, errors::ExecutionError, input::machine_code::{Instruction, Instructions}};
+use crate::{cpu::{ALUOperation, CPULatch, Latch}, errors::ExecutionError, input::machine_code::{Address, Instruction, Instructions}};
 
 use super::{ProcSig, CPU};
 use crate::{latch_reg_in, latch_reg_out_l, latch_reg_out_r, reg_out_latch};
@@ -30,27 +30,34 @@ impl<'a> Decoder<'a> {
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
+            In(target) => {
+                self.cu.latch(CPULatch::IODP);
+                self.cu.tick();
+                latch_reg_in!(*target, self.cu.datapath);
+                self.cu.tick();
+            },
             Out(port, source) => {
                 latch_reg_out_l!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.io.select_port(port.clone());
-                self.cu.io.send_data(self.cu.datapath.alu.output as u8);
+                self.cu.latch(CPULatch::DPIO);
+                // self.cu.io.send_data();
                 self.cu.tick();
             },
             Jmp(address) => {
-                self.select_ip_input(IpSelect::FromInstruction(*address as usize));
+                self.select_ip_input(IpSelect::FromInstruction(*address));
                 self.cu.tick();
             },
             Be(address) => {
                 if self.cu.datapath.alu.zero_flag {
-                    self.select_ip_input(IpSelect::FromInstruction(*address as usize));
+                    self.select_ip_input(IpSelect::FromInstruction(*address));
                 }
                 self.cu.tick();
             },
             Bg(address) => {
                 if !self.cu.datapath.alu.zero_flag && !self.cu.datapath.alu.neg_flag {
-                    self.select_ip_input(IpSelect::FromInstruction(*address as usize));
+                    self.select_ip_input(IpSelect::FromInstruction(*address));
                 }
                 self.cu.tick();
             },
@@ -155,16 +162,90 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
                 // println!("{:?}", self.cu.datapath.reg4);
             },
-            Lbu(target, address) => {
+            Stw(address, source) => {
+                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                latch_reg_out_l!(*source, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::WriteW);
+                self.cu.tick();
+            },
+            Stb(address, source) => {
+                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                latch_reg_out_l!(*source, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::WriteB);
+                self.cu.tick();
+            },
+            Stwi(target, source) => {
+                latch_reg_out_l!(*target, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                latch_reg_out_l!(*source, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::WriteW);
+                self.cu.tick();
+            },
+            Stbi(target, source) => {
+                latch_reg_out_l!(*target, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                latch_reg_out_l!(*source, self.cu.datapath);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::WriteB);
+                self.cu.tick();
+            },
+            Call(address) => {
+                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Inc);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::ALUoSP);
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                self.cu.latch(CPULatch::IPIncDP);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
+                self.select_ip_input(IpSelect::FromInstruction(*address));
+                self.cu.tick();
+            },  
+            Ret => {
+                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::AddrR);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+                self.cu.datapath.alu.execute_operation(ALUOperation::Dec);
+                self.cu.tick();
+                self.cu.datapath.latch(Latch::ALUoSP);
+                self.cu.tick();
+                self.cu.datapath.memory.read_w(self.cu.datapath.addr_reg.value);
+                self.cu.tick();
+                self.select_ip_input(IpSelect::DataPath);
+                self.cu.tick();
+            },
+            Push(source) => {
 
             },
-            Lbui(target, source) => {
-
-            },
-            Stw(target, address) => {
-
-            },
-            Stb(target, address) => {
+            Pop(target) => {
 
             },
             Nop => self.cu.tick(),
@@ -173,13 +254,36 @@ impl<'a> Decoder<'a> {
                 return Ok(Some(ProcSig::Halt))
             },
         };
+
+        if self.cu.int {
+            let addr = self.cu.io.selected.clone() as usize * mem::size_of::<Address>();
+            self.cu.datapath.latch(Latch::SPALUl);
+            self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+            self.cu.datapath.alu.execute_operation(ALUOperation::Inc);
+            self.cu.tick();
+            self.cu.datapath.latch(Latch::ALUoSP);
+            self.cu.datapath.latch(Latch::AddrR);
+            self.cu.tick();
+            self.cu.latch(CPULatch::IPIncDP);
+            self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+            self.cu.tick();
+            self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
+            self.cu.tick();
+            self.cu.datapath.latch(Latch::IntVecALUl(addr as u32));
+            self.cu.datapath.alu.execute_operation(ALUOperation::Add);
+            self.cu.tick();
+            self.cu.datapath.memory.read_w(self.cu.datapath.alu.output);
+            self.cu.tick();
+            self.select_ip_input(IpSelect::DataPath);
+            self.cu.tick();
+        }
         Ok(None)
     }
 
     pub fn select_ip_input(&mut self, selection: IpSelect) {
         self.cu.ip.value = match selection {
                 IpSelect::Inc => self.cu.ip.value + 1,
-                IpSelect::DataPath => self.cu.datapath.alu.output as usize,
+                IpSelect::DataPath => self.cu.datapath.alu.output,
                 IpSelect::FromInstruction(address) => address
             }
     }
@@ -235,5 +339,5 @@ macro_rules! latch_reg_in {
 pub enum IpSelect {
     Inc,
     DataPath,
-    FromInstruction(usize)
+    FromInstruction(Address)
 }

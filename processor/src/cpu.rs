@@ -1,5 +1,5 @@
 use self::{clock::Clock, datapath::*, memory::Memory, ports::IOInterface, register::*};
-use crate::{cpu::decoder::Decoder, errors::ExecutionError, input::machine_code::{Data, Instruction, Instructions}};
+use crate::{cpu::decoder::Decoder, errors::ExecutionError, input::machine_code::{Address, Data, Instruction, Instructions}};
 
 pub mod register;
 pub mod datapath;
@@ -14,7 +14,7 @@ const INSTRUCTION_MEMORY_CAPACITY: usize = 1024;
 pub struct CPU<'a> {
     pub datapath: DataPath,
     pub clock: Clock,
-    pub ip: Register<usize>,
+    pub ip: Register<Address>,
     pub instr_memory: Memory<Instruction>,
 
     pub io: IOInterface<'a>,
@@ -33,14 +33,15 @@ impl<'a> CPU<'a> {
                 reg5: Register32::new(),
                 reg6: Register32::new(),
                 reg7: Register32::new(),
-        
-                addr_reg: Register::<usize>::new(),
+                
+                stack_p: Register { value: 0 },
+                addr_reg: Register::new(),
         
                 alu: ALU::new(),
                 memory: Memory::from_data_with_spec_size(data, DATA_MEMORY_CAPACITY),
             },
             clock: Clock(0),
-            ip: Register::<usize>::new(),
+            ip: Register::new(),
             instr_memory: Memory::from_data_with_spec_size(instructions, INSTRUCTION_MEMORY_CAPACITY),
 
             io: IOInterface::new(),
@@ -69,8 +70,29 @@ impl<'a> CPU<'a> {
         self.clock.tick();
         self.datapath.tick();
         self.io.tick();
+
+        if let ports::PortIOStatus::Input = self.io.status {self.int = true};
         // println!("tick");
     }
+
+    pub fn latch(&mut self, latch: CPULatch) {
+        use CPULatch::*;
+        match latch {
+            IPIncDP => self.datapath.alu.right_input = self.ip.value + 1,
+            IODP => self.datapath.alu.output = self.io.data as u32,
+            DPIO => {
+                self.io.data = self.datapath.alu.output as u8;
+                self.io.output();
+            },
+        }
+    }
+}
+
+
+pub enum CPULatch {
+    IPIncDP,
+    IODP,
+    DPIO,
 }
 
 

@@ -1,4 +1,4 @@
-use crate::input::machine_code::Instruction;
+use crate::input::machine_code::{Address, Instruction};
 use crate::new_register32;
 
 use super::memory::{ByteMemory, Memory};
@@ -15,7 +15,8 @@ pub struct DataPath {
     pub reg6: Register32,
     pub reg7: Register32,
 
-    pub addr_reg: Register<usize>,
+    pub stack_p: Register<Address>,
+    pub addr_reg: Register<Address>,
 
     pub alu: ALU,
     pub memory: ByteMemory,
@@ -63,6 +64,7 @@ impl DataPath {
             R5ALUl => self.alu.left_input = self.reg5.value,
             R6ALUl => self.alu.left_input = self.reg6.value,
             R7ALUl => self.alu.left_input = self.reg7.value,
+            SPALUl => self.alu.left_input = self.stack_p.value,
             R0ALUr => self.alu.right_input = self.reg0.value,
             R1ALUr => self.alu.right_input = self.reg1.value,
             R2ALUr => self.alu.right_input = self.reg2.value,
@@ -71,6 +73,7 @@ impl DataPath {
             R5ALUr => self.alu.right_input = self.reg5.value,
             R6ALUr => self.alu.right_input = self.reg6.value,
             R7ALUr => self.alu.right_input = self.reg7.value,
+            SPALUr => self.alu.right_input = self.stack_p.value,
             ALUoR0 => self.reg0.value = self.alu.output,
             ALUoR1 => self.reg1.value = self.alu.output,
             ALUoR2 => self.reg2.value = self.alu.output,
@@ -79,9 +82,11 @@ impl DataPath {
             ALUoR5 => self.reg5.value = self.alu.output,
             ALUoR6 => self.reg6.value = self.alu.output,
             ALUoR7 => self.reg7.value = self.alu.output,
+            ALUoSP => self.stack_p.value = self.alu.output,
 
             DecALUl(value) => self.alu.left_input = value,
-            AddrR => self.addr_reg.value = self.alu.output as usize,
+            IntVecALUl(value) => self.alu.left_input = value,
+            AddrR => self.addr_reg.value = self.alu.output,
             WriteB => self.memory.write(self.addr_reg.value, self.alu.output as u8),
             WriteW => self.memory.write_w(self.addr_reg.value, self.alu.output),
             ReadB => self.alu.output = *self.memory.read(self.addr_reg.value) as u32,
@@ -92,6 +97,10 @@ impl DataPath {
 
     pub fn tick(&mut self) {
         self.alu.tick();
+    }
+
+    pub fn write_memory(&mut self) {
+
     }
 }
 
@@ -105,6 +114,7 @@ pub enum Latch {
     R5ALUl,
     R6ALUl,
     R7ALUl,
+    SPALUl,
     R0ALUr,
     R1ALUr,
     R2ALUr,
@@ -113,6 +123,7 @@ pub enum Latch {
     R5ALUr,
     R6ALUr,
     R7ALUr,
+    SPALUr,
     ALUoR0,
     ALUoR1,
     ALUoR2,
@@ -121,8 +132,10 @@ pub enum Latch {
     ALUoR5,
     ALUoR6,
     ALUoR7,
+    ALUoSP,
 
     DecALUl(u32),
+    IntVecALUl(Address),
     AddrR,
     WriteB,
     WriteW,
@@ -166,6 +179,7 @@ impl ALU {
             Rem => self.left_input % self.right_input,
             And => self.left_input & self.right_input,
             Inc => self.output + 1,
+            Dec => self.output - 1,
             Xor => self.left_input ^ self.right_input,
         };
 
@@ -191,6 +205,7 @@ pub enum ALUOperation {
     Rem,
     And,
     Inc,
+    Dec,
     Xor
 }
 
