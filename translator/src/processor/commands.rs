@@ -19,11 +19,14 @@ pub enum Instruction {
     Mov(&'static GlobRegister, &'static GlobRegister),
     Movn(&'static GlobRegister, i32),
 
-    // In(&'static GlobRegister, &'static GlobRegister),
+    In(PortIndex, &'static GlobRegister),
     Out(PortIndex, &'static GlobRegister),
+    Di,
+    Ei,
 
     Jmp(Mark<Address>),
     Be(Mark<Address>),
+    Bne(Mark<Address>),
     Bg(Mark<Address>),
 
     La(&'static GlobRegister, Mark<Address>),
@@ -33,6 +36,8 @@ pub enum Instruction {
     Lbu(&'static GlobRegister, Mark<Address>),
     Stw(Mark<Address>, &'static GlobRegister),
     Stb(Mark<Address>, &'static GlobRegister),
+    Stwi(&'static GlobRegister, &'static GlobRegister),
+    Stbi(&'static GlobRegister, &'static GlobRegister),
 
     Inc(&'static GlobRegister),
     Add(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
@@ -42,6 +47,11 @@ pub enum Instruction {
     And(&'static GlobRegister, &'static GlobRegister, &'static GlobRegister),
     Cmp(&'static GlobRegister, &'static GlobRegister),
     Test(&'static GlobRegister, &'static GlobRegister),
+
+    Call(Mark<Address>),
+    Ret,
+    Push(&'static GlobRegister),
+    Pop(&'static GlobRegister),
 
     Nop,
     Halt
@@ -53,15 +63,19 @@ impl FromStr for Instruction {
     fn from_str(raw_command: &str) -> Result<Self, Self::Err> {
         let token_elements = get_token_elements(raw_command);
 
-        println!("command: \"{raw_command}\"\nargs: {:?}", token_elements.1);
-
         let args = token_elements.1.as_slice();
         match token_elements.0 {
             "mov" => Self::init_mov(args),
             "movn" => Self::init_movn(args),
+
+            "in" => Self::init_in(args),
             "out" => Self::init_out(args),
+            "di" => Ok(Self::Di),
+            "ei" => Ok(Self::Ei),
+
             "jmp" => Self::init_jmp(args),
             "be" => Self::init_be(args),
+            "bne" => Self::init_bne(args),
             "bg" => Self::init_bg(args),
 
             "la" => Self::init_la(args),
@@ -71,15 +85,22 @@ impl FromStr for Instruction {
             "lbu" => Self::init_lbu(args),
             "stw" => Self::init_stw(args),
             "stb" => Self::init_stb(args),
+            "stwi" => Self::init_stwi(args),
+            "stbi" => Self::init_stbi(args),
 
             "inc" => Self::init_inc(args),
             "add" => Self::init_add(args),
-            "sub" => Self::init_add(args),
-            "mul" => Self::init_add(args),
-            "rem" => Self::init_add(args),
+            "sub" => Self::init_sub(args),
+            "mul" => Self::init_mul(args),
+            "rem" => Self::init_rem(args),
             "and" => Self::init_and(args),
             "cmp" => Self::init_cmp(args),
             "test" => Self::init_test(args),
+
+            "call" => Self::init_call(args),
+            "ret" => Self::init_ret(args),
+            "push" => Self::init_push(args),
+            "pop" => Self::init_pop(args),
 
             "nop" => Ok(Self::Nop),
             "halt" => Ok(Self::Halt),
@@ -114,7 +135,9 @@ impl Instruction {
         match self {
             Jmp(_) => true,
             Be(_) => true,
+            Bne(_) => true,
             Bg(_) => true,
+            Call(_) => true,
             _ => false
         }
     }
@@ -124,6 +147,7 @@ impl Instruction {
         match self {
             Jmp(mark) => Some(mark),
             Be(mark) => Some(mark),
+            Bne(mark) => Some(mark),
             Bg(mark) => Some(mark),
             La(_, mark) => Some(mark),
             Lw(_, mark) => Some(mark),
@@ -131,6 +155,7 @@ impl Instruction {
             Lbu(_, mark) => Some(mark),
             Stw(mark, _) => Some(mark),
             Stb(mark, _) => Some(mark),
+            Call(mark) => Some(mark),
             _ => None
         }
     }
@@ -140,6 +165,7 @@ impl Instruction {
         match self {
             Jmp(_) => Ok(Jmp(mark)),
             Be(_) => Ok(Be(mark)),
+            Bne(_) => Ok(Bne(mark)),
             Bg(_) => Ok(Bg(mark)),
             La(target, _) => Ok(La(target, mark)),
             Lw(target, _) => Ok(Lw(target, mark)),
@@ -147,6 +173,7 @@ impl Instruction {
             Lbu(target, _) => Ok(Lbu(target, mark)),
             Stw(_, source) => Ok(Stw(mark, source)),
             Stb(_, source) => Ok(Stb(mark, source)),
+            Call(_) => Ok(Call(mark)),
             _ => Err(LinkError::UnmarkableInstruction)
         }
     }
@@ -167,6 +194,15 @@ impl Instruction {
             args[1].parse()
                 .map_err(|_| ParseError::InvalidCommandArgumants)?
         ))
+    }
+
+    fn init_in(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::In(
+            args[0].parse()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?,
+            get_register(args[1])?))
     }
 
     fn init_out(args: &[&str]) -> Result<Instruction, ParseError> {
@@ -198,6 +234,18 @@ impl Instruction {
             Err(err) => match err.kind() {
                 IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
                 _ => Ok(Instruction::Be(Mark::Label(args[0].to_owned())))
+            }
+        }
+    }
+
+    fn init_bne(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Bne(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Bne(Mark::Label(args[0].to_owned())))
             }
         }
     }
@@ -305,6 +353,18 @@ impl Instruction {
         }
     }
 
+    fn init_stwi(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::Stwi(get_register(args[0])?, get_register(args[1])?))
+    }
+
+    fn init_stbi(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 2)?;
+
+        Ok(Instruction::Stbi(get_register(args[0])?, get_register(args[1])?))
+    }
+
     fn init_inc(args: &[&str]) -> Result<Instruction, ParseError> {
         check_args_len(args, 1)?;
 
@@ -381,6 +441,40 @@ impl Instruction {
         ))
     }
 
+    fn init_call(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Call(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Call(Mark::Label(args[0].to_owned())))
+            }
+        }
+    }
+
+    fn init_ret(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 0)?;
+
+        Ok(Instruction::Ret)
+    }
+
+    fn init_push(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(Instruction::Push(
+            get_register(args[0])?
+        ))
+    }
+
+    fn init_pop(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        Ok(Instruction::Pop(
+            get_register(args[0])?
+        ))
+    }
+
 }
 
 impl fmt::Display for Instruction {
@@ -408,7 +502,6 @@ fn get_token_elements(token: &str) -> (&str, Vec<&str>) {
                 .split(ARGUMENTS_SEPARATOR)
                 .map(|s| s.trim())
                 .collect::<Vec<&str>>()
-            // {println!("{:?}", separator.captures(instr_args.1).unwrap().iter().map(|mat| mat.unwrap().range()).collect::<Vec<_>>()); vec![]}
         ),
         None => (token, Vec::new())
     }
@@ -440,8 +533,6 @@ impl FromStr for DataCommand {
 
     fn from_str(raw_command: &str) -> Result<Self, Self::Err> {
         let token_elements = get_token_elements(raw_command);
-
-        println!("command: \"{raw_command}\"\nargs: {:?}", token_elements.1);
 
         let args = token_elements.1.as_slice();
         match token_elements.0 {

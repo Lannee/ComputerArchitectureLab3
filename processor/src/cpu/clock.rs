@@ -1,6 +1,6 @@
 
 
-
+#[derive(Debug)]
 pub struct Clock(pub usize);
 
 impl Clock {

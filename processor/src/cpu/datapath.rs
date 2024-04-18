@@ -4,7 +4,7 @@ use crate::new_register32;
 use super::memory::{ByteMemory, Memory};
 use super::{Register, Register32};
 
-
+#[derive(Debug)]
 pub struct DataPath {
     pub reg0: Register32, 
     pub reg1: Register32,
@@ -173,13 +173,13 @@ impl ALU {
     pub fn execute_operation(&mut self, operation: ALUOperation) {
         use ALUOperation::*;
         self.output = match operation {
-            Add => self.left_input + self.right_input,
-            Sub => self.left_input - self.right_input,
-            Mul => self.left_input * self.right_input,
-            Rem => self.left_input % self.right_input,
+            Add => self.left_input.overflowing_add(self.right_input).0,
+            Sub => self.left_input.overflowing_sub(self.right_input).0,
+            Mul => self.left_input.overflowing_mul(self.right_input).0,
+            Rem => self.left_input.overflowing_rem(self.right_input).0,
             And => self.left_input & self.right_input,
-            Inc => self.output + 1,
-            Dec => self.output - 1,
+            Inc => self.left_input.overflowing_add(1).0,
+            Dec => self.left_input.overflowing_sub(1).0,
             Xor => self.left_input ^ self.right_input,
         };
 

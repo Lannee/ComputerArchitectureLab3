@@ -48,7 +48,7 @@ impl fmt::Display for InputError {
             NoInteruptionScheduleError => write!(f, "No interuption schedule faund"),
             InteruptScheduleParseError(err) => write!(f, "Interuption schedule parse error: \n{err}"),
             MachineCodeError(err) => write!(f, "Machine code error: \n {err}"),
-            FileError(err) => write!(f, ""),
+            FileError(err) => write!(f, "File error: \n{err}"),
 
             _ => write!(f, "Other error"),
         }

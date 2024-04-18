@@ -2,18 +2,22 @@ use crate::{cpu::ports::Port, input::IntSchedule};
 
 
 #[derive(Debug)]
-pub struct Device<'a> {
+pub struct Device {
     schedule: IntSchedule,
-    pub port: Option<&'a mut Port<'a>>,
+    // pub port: Option<&'a mut Port<'a>>,
+
+    out_buffer: Vec<u8>,
+    pub int_req: bool,
 
     _tick: usize,
 }
 
-impl<'a> Device<'a> {
-    pub fn new(schedule: IntSchedule, port: Option<&'a mut Port<'a>>) -> Device<'a> {
+impl Device {
+    pub fn new(schedule: IntSchedule) -> Device {
         Device {
             schedule,
-            port,
+            out_buffer: vec![],
+            int_req: false,
 
             _tick: 0,
         }
@@ -21,9 +25,11 @@ impl<'a> Device<'a> {
 
     pub fn tick(&mut self) {
         if let Some(data) = self.schedule.iter().filter(|interupt| interupt.0 == self._tick).next() {
-            self._out(data.1 as u8);
+            self._out(data.1);
         }
         self._tick += 1;
+
+        self.int_req = !self.out_buffer.is_empty();
     }
 
     pub fn _in(&mut self, data: u8) {
@@ -31,9 +37,15 @@ impl<'a> Device<'a> {
     }
 
     pub fn _out(&mut self, data: u8) {
-        if let Some(port) = &mut self.port {
-            port._in(data);
-        }
+        self.out_buffer.push(data);
+    }
+
+    pub fn on_bus(&self) -> u8 {
+        *self.out_buffer.first().unwrap_or(&0)
+    }
+
+    pub fn data_rx(&mut self) {
+        if !self.out_buffer.is_empty() {self.out_buffer.remove(0);};
     }
 }
 

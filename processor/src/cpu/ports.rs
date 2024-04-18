@@ -5,20 +5,26 @@ use serde::Deserializer;
 use crate::out_device::Device;
 
 #[derive(Debug)]
-pub struct Port<'a> {
+pub struct Port {
     pub data: u8,
-    device: Option<Device<'a>>,
+    device: Option<Device>,
 
-    pub status: PortIOStatus
+    pub status: PortIOStatus,
+    pub int_req: bool,
 }
 
-impl<'a> Port<'a> {
+impl Port {
     pub fn new(device: Option<Device>) -> Port {
         Port {
             data: u8::default(),
             device,
-            status: PortIOStatus::None
+            status: PortIOStatus::None,
+            int_req: false,
         }
+    }
+
+    pub fn connect_device(&mut self, dev: Device) {
+        self.device = Some(dev)
     }
 
     pub fn _out(&mut self, data: u8) {
@@ -35,25 +41,34 @@ impl<'a> Port<'a> {
 
     pub fn tick(&mut self) {
         if let Some(device) = &mut self.device {
-            device.tick()
+            device.tick();
+            self.int_req = device.int_req;
+            self.data = device.on_bus();
+        }
+    }
+
+    pub fn data_rx(&mut self) {
+        if let Some(dev) = &mut self.device {
+            dev.data_rx()
         }
     }
 }
 
 
 #[derive(Debug)]
-pub struct IOInterface<'a> {
-    port0: Port<'a>,
-    port1: Port<'a>,
+pub struct IOInterface {
+    pub port0: Port,
+    pub port1: Port,
 
     pub selected: PortSelect,
     pub data: u8,
 
     pub status: PortIOStatus,
+    pub int_req: bool,
 }
 
-impl<'a> IOInterface<'a> {
-    pub fn new() -> IOInterface<'a> {
+impl IOInterface {
+    pub fn new() -> IOInterface {
         IOInterface {
             port0: Port::new(None),
             port1: Port::new(None),
@@ -62,20 +77,7 @@ impl<'a> IOInterface<'a> {
             data: 0,
             
             status: PortIOStatus::None,
-        }
-    }
-
-    #[you_can::turn_off_the_borrow_checker]
-    pub fn connect_device(&mut self, port: PortSelect, mut dev: Device<'a>) {
-        match port {
-            PortSelect::Port0 => {
-                dev.port = Some(&mut self.port0);
-                self.port0.device = Some(dev);
-            },
-            PortSelect::Port1 => {
-                dev.port = Some(&mut self.port1);
-                self.port1.device = Some(dev);
-            }
+            int_req: false,
         }
     }
 
@@ -83,9 +85,17 @@ impl<'a> IOInterface<'a> {
         self.port0.tick();
         self.port1.tick();
         
-        self.status = match self.selected {
-            PortSelect::Port0 => self.port0.status.clone(),
-            PortSelect::Port1 => self.port1.status.clone(),
+        match self.selected {
+            PortSelect::Port0 => {
+                self.status = self.port0.status.clone();
+                self.int_req = self.port0.int_req;
+                self.data = self.port0.data;
+            },
+            PortSelect::Port1 => {
+                self.status = self.port1.status.clone();
+                self.int_req = self.port1.int_req;
+                self.data = self.port1.data;
+            },
         }
     }
 
@@ -97,6 +107,13 @@ impl<'a> IOInterface<'a> {
         match self.selected {
             PortSelect::Port0 => self.port0._out(self.data),
             PortSelect::Port1 => self.port1._out(self.data),
+        }
+    }
+
+    pub fn data_rx(&mut self) {
+        match self.selected {
+            PortSelect::Port0 => self.port0.data_rx(),
+            PortSelect::Port1 => self.port1.data_rx(),
         }
     }
 }

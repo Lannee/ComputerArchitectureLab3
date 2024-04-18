@@ -11,18 +11,21 @@ pub mod ports;
 const DATA_MEMORY_CAPACITY: usize = 1024;
 const INSTRUCTION_MEMORY_CAPACITY: usize = 1024;
 
-pub struct CPU<'a> {
+#[derive(Debug)]
+pub struct CPU {
     pub datapath: DataPath,
     pub clock: Clock,
     pub ip: Register<Address>,
     pub instr_memory: Memory<Instruction>,
 
-    pub io: IOInterface<'a>,
+    pub io: IOInterface,
     int: bool,
+    int_req: bool,
+    int_enabled: bool,
 }
 
-impl<'a> CPU<'a> {
-    pub fn new(instructions: Instructions, data: Data) -> CPU<'a> {
+impl CPU {
+    pub fn new(instructions: Instructions, data: Data) -> CPU {
         CPU {
             datapath: DataPath {
                 reg0: Register32::new(),
@@ -46,6 +49,8 @@ impl<'a> CPU<'a> {
 
             io: IOInterface::new(),
             int: false,
+            int_req: false,
+            int_enabled: true,
         }
     }
 
@@ -71,14 +76,13 @@ impl<'a> CPU<'a> {
         self.datapath.tick();
         self.io.tick();
 
-        if let ports::PortIOStatus::Input = self.io.status {self.int = true};
-        // println!("tick");
+        self.int_req = self.io.int_req;
     }
 
     pub fn latch(&mut self, latch: CPULatch) {
         use CPULatch::*;
         match latch {
-            IPIncDP => self.datapath.alu.right_input = self.ip.value + 1,
+            IPIncDP => self.datapath.alu.right_input = self.ip.value,
             IODP => self.datapath.alu.output = self.io.data as u32,
             DPIO => {
                 self.io.data = self.datapath.alu.output as u8;
