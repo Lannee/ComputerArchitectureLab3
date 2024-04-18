@@ -22,7 +22,7 @@ pub enum Instruction {
     Mov(RegIndex, RegIndex),
     Movn(RegIndex, i32),
 
-    In(PortSelect, RegIndex),
+    In(RegIndex, PortSelect),
     Out(PortSelect, RegIndex),
     Di,
     Ei,

@@ -1,13 +1,18 @@
-; reg4 - next symbol pointer
+; reg5 - next symbol pointer
 ; reg3 - last symbol from input
-
 section .code
-    la reg4, cat_data
+    di
+    la reg1, greeting
+    call print
+    ei 
 wait:
     test reg3, reg3
     bne wait
 
-    la reg1, cat_data
+    di
+    la reg1, hello
+    call print
+    la reg1, user_name
     call print
     halt
 
@@ -20,6 +25,8 @@ int_handler0:
     ret
 
 print:
+    push reg3
+    push reg4
     mov reg3, reg1
 loop:
     lbi reg4, reg3
@@ -30,11 +37,15 @@ loop:
     inc reg3
     jmp loop
 end:
+    pop reg4
+    pop reg3
     ret
 
-
 section .data
-    
     vec int_handler0
 
-cat_data:
+greeting:
+    str Enter your name:
+hello:
+    str hello 
+user_name:

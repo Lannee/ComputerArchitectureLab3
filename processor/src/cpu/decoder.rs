@@ -1,6 +1,6 @@
-use std::{fmt::Alignment, mem};
+use std::mem;
 
-use crate::{cpu::{ALUOperation, CPULatch, Latch}, errors::ExecutionError, input::machine_code::{Address, Instruction, Instructions}};
+use crate::{cpu::{ALUOperation, CPULatch, Latch}, errors::ExecutionError, input::machine_code::{Address, Instruction}};
 
 use super::{ProcSig, CPU};
 use crate::{latch_reg_in, latch_reg_out_l, latch_reg_out_r, reg_out_latch};
@@ -14,6 +14,7 @@ pub struct Decoder<'a> {
 
 impl<'a> Decoder<'a> {
     pub fn execute_instruction(&mut self, instruction: &Instruction) -> Result<Option<ProcSig>, ExecutionError> {
+        // println!("{instruction:?}");
         use Instruction::*;
         match instruction {
             Mov(target, source) => {
@@ -30,7 +31,7 @@ impl<'a> Decoder<'a> {
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
-            In(port, target) => {
+            In(target, port) => {
                 self.cu.io.select_port(port.clone());
                 self.cu.tick();
                 self.cu.latch(CPULatch::IODP);
@@ -228,7 +229,7 @@ impl<'a> Decoder<'a> {
             },
             Call(address) => {
                 self.cu.datapath.latch(Latch::SPALUl);
-                self.cu.datapath.alu.right_input = 4;
+                self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
@@ -248,7 +249,7 @@ impl<'a> Decoder<'a> {
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::SPALUl);
-                self.cu.datapath.alu.right_input = 4;
+                self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
@@ -260,7 +261,7 @@ impl<'a> Decoder<'a> {
             },
             Push(source) => {
                 self.cu.datapath.latch(Latch::SPALUl);
-                self.cu.datapath.alu.right_input = 4;
+                self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
@@ -279,7 +280,7 @@ impl<'a> Decoder<'a> {
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::SPALUl);
-                self.cu.datapath.alu.right_input = 4;
+                self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);

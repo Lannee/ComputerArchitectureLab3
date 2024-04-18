@@ -40,7 +40,7 @@ pub fn parse(code: &SourceCode) -> Result<RawInctructions, ParseError> {
                     }
                 }).map(|command| {
                     let command = command?;
-                    *byte_counter.borrow_mut() += command.get_size();
+                    *byte_counter.borrow_mut() += command.get_size() as u32;
                     Ok(command)
                 }).collect::<Result<Vec<DataCommand>, ParseError>>()
             });

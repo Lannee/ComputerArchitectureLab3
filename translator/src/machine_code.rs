@@ -8,7 +8,7 @@ pub type Inctructions = Vec<Instruction>;
 pub type Data = Vec<u8>;
 pub type Labels = HashMap<Label, Address>;
 
-pub type Address = usize;
+pub type Address = u32;
 pub type Label = String;
 pub type PortIndex = usize;
 

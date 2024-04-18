@@ -19,7 +19,7 @@ pub enum Instruction {
     Mov(&'static GlobRegister, &'static GlobRegister),
     Movn(&'static GlobRegister, i32),
 
-    In(PortIndex, &'static GlobRegister),
+    In(&'static GlobRegister, PortIndex),
     Out(PortIndex, &'static GlobRegister),
     Di,
     Ei,
@@ -200,9 +200,10 @@ impl Instruction {
         check_args_len(args, 2)?;
 
         Ok(Instruction::In(
-            args[0].parse()
-                .map_err(|_| ParseError::InvalidCommandArgumants)?,
-            get_register(args[1])?))
+            get_register(args[0])?,
+            args[1].parse()
+                .map_err(|_| ParseError::InvalidCommandArgumants)?
+            ))
     }
 
     fn init_out(args: &[&str]) -> Result<Instruction, ParseError> {
