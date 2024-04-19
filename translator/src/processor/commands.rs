@@ -1,4 +1,5 @@
 use core::fmt;
+use std::borrow::Cow;
 use std::{num::IntErrorKind, str::FromStr};
 
 use crate::errors::LinkError;
@@ -494,18 +495,33 @@ impl fmt::Display for Instruction {
 
 fn get_token_elements(token: &str) -> (&str, Vec<&str>) {
     let instr_args = token.split_once(INSTRUCTION_ARGUMENTS_SEPARATOR);
-    // let separator: Regex = Regex::new(r#"("[^"]+"|[^,"]+)"#).unwrap();
 
     match instr_args {
         Some(instr_args) => (
             instr_args.0, 
-            instr_args.1
-                .split(ARGUMENTS_SEPARATOR)
-                .map(|s| s.trim())
-                .collect::<Vec<&str>>()
+            parse_arguments(instr_args.1)
         ),
         None => (token, Vec::new())
     }
+}
+
+
+fn parse_arguments(input: &str) -> Vec<&str> {
+    let re = regex::Regex::new(r#""[^"]*"|[^",\s]+"#).unwrap();
+
+    re.find_iter(input)
+        .map(|mat| mat.as_str())
+        .map(|raw_arg| {
+            match raw_arg.strip_suffix("\"") {
+                None => return raw_arg,
+                Some(stripped) => {
+                    match stripped.strip_prefix("\"") {
+                        None => stripped,
+                        Some(arg) => arg
+                    }
+                }
+            }
+        }).collect()
 }
 
 fn get_register(reg_name: &str) -> Result<&'static GlobRegister, ParseError> {
