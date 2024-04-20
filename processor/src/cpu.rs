@@ -1,5 +1,5 @@
 use self::{clock::Clock, datapath::*, memory::Memory, ports::IOInterface, register::*};
-use crate::{cpu::decoder::Decoder, errors::ExecutionError, input::machine_code::{Address, Data, Instruction, Instructions}};
+use crate::{cpu::decoder::Decoder, errors::ExecutionError, input::machine_code::{Address, Data, Instruction, Instructions}, logger::Logger};
 
 pub mod register;
 pub mod datapath;
@@ -8,8 +8,8 @@ pub mod decoder;
 pub mod memory;
 pub mod ports;
 
-const DATA_MEMORY_CAPACITY: usize = 1024;
-const INSTRUCTION_MEMORY_CAPACITY: usize = 1024;
+const DATA_MEMORY_CAPACITY: usize = 0x1000;
+const INSTRUCTION_MEMORY_CAPACITY: usize = 0x1000;
 
 #[derive(Debug)]
 pub struct CPU {
@@ -19,14 +19,18 @@ pub struct CPU {
     pub instr_memory: Memory<Instruction>,
 
     pub io: IOInterface,
-    int: bool,
     int_req: bool,
     int_enabled: bool,
+
+    __logger: Logger,
+    __curr_instr: Option<Instruction>,
+    __curr_instr_addr: Option<Address>,
 }
 
 impl CPU {
-    pub fn new(instructions: Instructions, data: Data) -> CPU {
+    pub fn new(instructions: Instructions, data: Data, logger: Logger) -> CPU {
         CPU {
+            __logger: logger,
             datapath: DataPath {
                 reg0: Register32::new(),
                 reg1: Register32::new(),
@@ -48,9 +52,11 @@ impl CPU {
             instr_memory: Memory::from_data_with_spec_size(instructions, INSTRUCTION_MEMORY_CAPACITY),
 
             io: IOInterface::new(),
-            int: false,
             int_req: false,
             int_enabled: true,
+
+            __curr_instr: None,
+            __curr_instr_addr: None,
         }
     }
 
@@ -62,6 +68,8 @@ impl CPU {
 
         loop {
             let instruction = self.instr_memory.read(self.ip.value);
+            self.__curr_instr = Some(instruction.clone());
+            self.__curr_instr_addr = Some(self.ip.value);
             decoder.select_ip_input(decoder::IpSelect::Inc);
 
             if let Some(ProcSig::Halt) = decoder.execute_instruction(instruction)? {
@@ -77,6 +85,7 @@ impl CPU {
         self.io.tick();
 
         self.int_req = self.io.int_req;
+        self.log_state()
     }
 
     pub fn latch(&mut self, latch: CPULatch) {
@@ -102,4 +111,37 @@ pub enum CPULatch {
 
 pub enum ProcSig {
     Halt
+}
+
+
+impl CPU {
+    fn log_state(&mut self) {
+        self.__logger.write_cpu_state_log(
+            self.__curr_instr_addr.unwrap(),
+                self.__curr_instr.as_ref().unwrap(),
+                self.clock.0,
+
+                self.datapath.reg0.value,
+                self.datapath.reg1.value,
+                self.datapath.reg2.value,
+                self.datapath.reg3.value,
+                self.datapath.reg4.value,
+                self.datapath.reg5.value,
+                self.datapath.reg6.value,
+                self.datapath.reg7.value,
+
+                self.datapath.stack_p.value,
+                (self.datapath.addr_reg.value as usize % self.datapath.memory.get_capacity()) as u32,
+
+                self.datapath.alu.zero_flag,
+                self.datapath.alu.neg_flag,
+            )
+    }
+
+    fn log_int(&mut self) {
+        self.__logger.write_cpu_int(
+                &self.io.selected,
+                self.io.data
+            );
+    } 
 }

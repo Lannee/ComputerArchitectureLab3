@@ -6,12 +6,12 @@ use serde::Deserialize;
 
 use crate::errors::{InputError, MachineCodeError};
 
-use self::machine_code::{Data, Instructions, Instruction, MachineCode};
+use self::machine_code::{Data, Instructions, MachineCode};
 
 
 pub type IntSchedule = Vec<Interupt>;
 
-const LOG_FILE_DFLT_NAME: &str = "logs/log";
+const LOG_FILE_DFLT_NAME: &str = "log.txt";
 
 pub fn get_src() -> Result<(Instructions, Data), InputError> {
     let content = std::fs::read_to_string(get_src_path()?).map_err(|err| InputError::FileError(err))?;
@@ -27,7 +27,7 @@ pub fn get_log_file() -> Result<File, InputError> {
     let env = env_args::EnvArgs::get();
 
     match env.logs {
-        None => File::create(file_name_as_json(LOG_FILE_DFLT_NAME)),
+        None => File::create(LOG_FILE_DFLT_NAME),
         Some(log_path) => File::open(log_path)
     }
     .map_err(|err| InputError::FileError(err))
@@ -52,17 +52,6 @@ pub fn get_schedule() -> Result<IntSchedule, InputError> {
         }
     }
 }
-
-fn file_name_as_json(file_name: &str) -> String {
-    let mut name = match file_name.rsplit_once(".") {
-        None => file_name.to_string(),
-        Some(name) => name.0.to_string()
-    };
-
-    name.push_str(".json");
-    name
-}
-
 
 #[derive(Deserialize, Debug)]
 pub struct Interupt(pub usize, pub u8);

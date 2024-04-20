@@ -9,7 +9,6 @@ pub struct Port {
     pub data: u8,
     device: Option<Device>,
 
-    pub status: PortIOStatus,
     pub int_req: bool,
 }
 
@@ -18,7 +17,6 @@ impl Port {
         Port {
             data: u8::default(),
             device,
-            status: PortIOStatus::None,
             int_req: false,
         }
     }
@@ -35,7 +33,6 @@ impl Port {
     }
 
     pub fn _in(&mut self, data: u8) {
-        self.status = PortIOStatus::Input;
         self.data = data;
     }
 
@@ -63,7 +60,6 @@ pub struct IOInterface {
     pub selected: PortSelect,
     pub data: u8,
 
-    pub status: PortIOStatus,
     pub int_req: bool,
 }
 
@@ -76,7 +72,6 @@ impl IOInterface {
             selected: PortSelect::Port0,
             data: 0,
             
-            status: PortIOStatus::None,
             int_req: false,
         }
     }
@@ -87,12 +82,10 @@ impl IOInterface {
         
         match self.selected {
             PortSelect::Port0 => {
-                self.status = self.port0.status.clone();
                 self.int_req = self.port0.int_req;
                 self.data = self.port0.data;
             },
             PortSelect::Port1 => {
-                self.status = self.port1.status.clone();
                 self.int_req = self.port1.int_req;
                 self.data = self.port1.data;
             },
@@ -124,11 +117,19 @@ pub enum PortSelect {
     Port1 = 1,
 }
 
-#[derive(Clone, Debug)]
-pub enum PortIOStatus {
-    Input,
-    Output,
-    None
+impl core::fmt::Display for PortSelect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.get_port_id())
+    }
+}
+
+impl PortSelect {
+    pub fn get_port_id(&self) -> usize {
+        match self {
+            PortSelect::Port0 => 0,
+            PortSelect::Port1 => 1,
+        }
+    }
 }
 
 

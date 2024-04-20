@@ -23,6 +23,10 @@ impl<T: Default> Memory<T> {
             capacity
         }
     }
+
+    pub fn get_capacity(&self) -> usize {
+        self.capacity
+    }
 }
 
 impl<T> Memory<T> {

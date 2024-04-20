@@ -297,7 +297,8 @@ impl<'a> Decoder<'a> {
             },
         };
 
-        if self.cu.int_req & self.cu.int_enabled & !self.cu.int {
+        if self.cu.int_req & self.cu.int_enabled {
+            self.cu.log_int();
             let addr = self.cu.io.selected.clone() as usize * mem::size_of::<Address>();
             self.cu.datapath.latch(Latch::SPALUl);
             self.cu.datapath.alu.right_input = 4;
