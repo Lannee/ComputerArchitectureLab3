@@ -1,7 +1,6 @@
-use crate::input::machine_code::{Address, Instruction};
-use crate::new_register32;
+use crate::input::machine_code::Address;
 
-use super::memory::{ByteMemory, Memory};
+use super::memory::ByteMemory;
 use super::{Register, Register32};
 
 #[derive(Debug)]
@@ -73,7 +72,6 @@ impl DataPath {
             R5ALUr => self.alu.right_input = self.reg5.value,
             R6ALUr => self.alu.right_input = self.reg6.value,
             R7ALUr => self.alu.right_input = self.reg7.value,
-            SPALUr => self.alu.right_input = self.stack_p.value,
             ALUoR0 => self.reg0.value = self.alu.output,
             ALUoR1 => self.reg1.value = self.alu.output,
             ALUoR2 => self.reg2.value = self.alu.output,
@@ -119,7 +117,6 @@ pub enum Latch {
     R5ALUr,
     R6ALUr,
     R7ALUr,
-    SPALUr,
     ALUoR0,
     ALUoR1,
     ALUoR2,
@@ -137,8 +134,6 @@ pub enum Latch {
     WriteW,
     ReadB,
     ReadW,
-
-    // InOut
 }
 
 #[derive(Debug)]
@@ -175,8 +170,6 @@ impl ALU {
             Rem => self.left_input.overflowing_rem(self.right_input).0,
             And => self.left_input & self.right_input,
             Inc => self.left_input.overflowing_add(1).0,
-            Dec => self.left_input.overflowing_sub(1).0,
-            Xor => self.left_input ^ self.right_input,
         };
 
         self.set_flags();
@@ -201,22 +194,6 @@ pub enum ALUOperation {
     Rem,
     And,
     Inc,
-    Dec,
-    Xor
-}
-
-impl ALUOperation {
-    fn from(instruction: Instruction) -> Option<ALUOperation> {
-        use Instruction::*;
-        match instruction {
-            Add(_, _, _) => Some(Self::Add),
-            Sub(_, _, _) => Some(Self::Sub),
-            Mul(_, _, _) => Some(Self::Mul),
-            Rem(_, _, _) => Some(Self::Rem),
-
-            _ => None
-        }
-    }
 }
 
 

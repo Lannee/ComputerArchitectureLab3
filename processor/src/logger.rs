@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use crate::{cpu::{ports::PortSelect, CPU}, errors::InputError, input::{get_log_file, machine_code::{Address, Instruction}}};
+use crate::{cpu::ports::PortSelect, errors::InputError, input::{get_log_file, machine_code::{Address, Instruction}}};
 
 
 #[derive(Debug)]

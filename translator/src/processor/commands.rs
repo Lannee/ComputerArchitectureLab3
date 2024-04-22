@@ -1,16 +1,13 @@
-use core::fmt;
-use std::borrow::Cow;
 use std::{num::IntErrorKind, str::FromStr};
 
 use crate::errors::LinkError;
-use crate::{errors::ParseError, machine_code::Label};
+use crate::errors::ParseError;
 use crate::machine_code::{Address, PortIndex};
 use crate::translator::format::*;
 use crate::processor::PROCESSOR;
 
 use super::GlobRegister;
 
-use regex::Regex;
 use serde::{Serialize, Serializer};
 
 
@@ -496,20 +493,6 @@ impl Instruction {
 
 }
 
-impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Instruction::*;
-
-        match self {
-            Mov(target, from) => write!(f, ""),
-            Movn(target, value) => write!(f, ""),
-            // In(target, from) => write!(f, ""),
-            Out(target, from) => write!(f, ""),
-            _ => write!(f, ""),
-        }  
-    }    
-}
-
 fn get_token_elements(token: &str) -> (&str, Vec<&str>) {
     let instr_args = token.split_once(INSTRUCTION_ARGUMENTS_SEPARATOR);
 
@@ -674,13 +657,6 @@ pub enum Mark<T> {
 }
 
 impl<T> Mark<T> {
-    pub fn is_label(&self) -> bool {
-        match self {
-            Mark::Label(_) => true,
-            _ => false
-        }
-    }
-
     pub fn get_label(&self) -> Option<&str> {
         match self {
             Mark::Label(label) => Some(label),

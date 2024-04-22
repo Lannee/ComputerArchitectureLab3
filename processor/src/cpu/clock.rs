@@ -1,7 +1,7 @@
 
 
 #[derive(Debug)]
-pub struct Clock(pub usize);
+pub struct Clock(usize);
 
 impl Clock {
     pub fn new() -> Self {

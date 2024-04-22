@@ -37,10 +37,6 @@ impl<'a> Register<'a> {
             .into_iter()
             .any(|a| *a == name)
     }
-
-    pub fn get_id(&self) -> &u8 {
-        &self.id
-    }
 }
 
 impl<'a> Serialize for Register<'a> {

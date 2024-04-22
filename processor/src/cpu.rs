@@ -47,7 +47,7 @@ impl CPU {
                 alu: ALU::new(),
                 memory: Memory::from_data_with_spec_size(data, DATA_MEMORY_CAPACITY),
             },
-            clock: Clock(0),
+            clock: Clock::new(),
             ip: Register::new(),
             instr_memory: Memory::from_data_with_spec_size(instructions, INSTRUCTION_MEMORY_CAPACITY),
 
@@ -119,7 +119,7 @@ impl CPU {
         self.__logger.write_cpu_state_log(
             self.__curr_instr_addr.unwrap(),
                 self.__curr_instr.as_ref().unwrap(),
-                self.clock.0,
+                self.clock.get_tick(),
 
                 self.datapath.reg0.value,
                 self.datapath.reg1.value,

@@ -1,5 +1,3 @@
-use std::path::Display;
-
 use serde::Deserialize;
 
 use crate::cpu::ports::PortSelect;

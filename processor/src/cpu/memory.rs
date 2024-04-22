@@ -1,4 +1,4 @@
-use crate::input::machine_code::{Address, Instructions};
+use crate::input::machine_code::Address;
 
 
 
@@ -10,13 +10,6 @@ pub struct Memory<T> {
 }
 
 impl<T: Default> Memory<T> {
-    pub fn with_capacity(capacity: usize) -> Memory<T> {
-        Memory{
-            data: Vec::<T>::with_capacity(capacity),
-            capacity
-        }
-    }
-
     pub fn from_data_with_spec_size(mut data: Vec<T>, capacity: usize) -> Memory<T> {
         Memory {
             data: {data.resize_with(capacity, Default::default); data},

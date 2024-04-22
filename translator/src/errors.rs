@@ -54,9 +54,7 @@ pub enum ParseError {
     NoSuchCommand(String),
     EmptyLineAsCommand,
     InvalidCommandArgumants,
-    InvalidAmountOfCommandArguments(Vec<String>, usize, usize),
-
-    InstructionInDataSection,
+    InvalidAmountOfCommandArguments(Vec<String>, usize, usize)
 }
 
 impl fmt::Display for ParseError {
@@ -67,9 +65,7 @@ impl fmt::Display for ParseError {
             NoSuchCommand(command) => write!(f, "Unknown command \"{}\"", command),
             EmptyLineAsCommand => write!(f, "Empty line is trying to be treated as command"),
             InvalidCommandArgumants => write!(f, "Invalid command arguments"),
-            InvalidAmountOfCommandArguments(args, expected, found) => write!(f, "Invalid number of command arguments: \"{}\".\nExpected {expected}, but found {found}", args.join(", ")),
-
-            InstructionInDataSection => write!(f, "Found inctruction in data section"),
+            InvalidAmountOfCommandArguments(args, expected, found) => write!(f, "Invalid number of command arguments: \"{}\".\nExpected {expected}, but found {found}", args.join(", "))
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{cpu::ports::Port, input::IntSchedule};
+use crate::input::IntSchedule;
 
 
 #[derive(Debug)]

@@ -20,8 +20,6 @@ pub enum InputError {
 
 pub enum MachineCodeError {
     ParseError(serde_json::Error),
-    RawInstructionError,
-    InvalidRegisterIndex,
 }
 
 impl fmt::Debug for ProcessorError {
@@ -35,7 +33,7 @@ impl fmt::Display for ProcessorError {
         use ProcessorError::*;
         match self {
             InputError(err) => write!(f, "Input error: \n{err}"),
-            ExecutionError(err) => write!(f, ""),
+            ExecutionError(err) => write!(f, "Execution Error:\n{err}"),
         }
     }    
 }
@@ -49,8 +47,6 @@ impl fmt::Display for InputError {
             InteruptScheduleParseError(err) => write!(f, "Interuption schedule parse error: \n{err}"),
             MachineCodeError(err) => write!(f, "Machine code error: \n {err}"),
             FileError(err) => write!(f, "File error: \n{err}"),
-
-            _ => write!(f, "Other error"),
         }
     }    
 }
@@ -60,8 +56,15 @@ impl fmt::Display for MachineCodeError {
         use MachineCodeError::*;
         match self {
             ParseError(err) => write!(f, "Machine code parse error: \n{err}"),
-            RawInstructionError => write!(f, ""),
-            _ => write!(f, ""),
+        }
+    }    
+}
+
+impl fmt::Display for ExecutionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use ExecutionError::*;
+        match self {
+            InvalidRegisterIndexError => write!(f, "Invalid register index"),
         }
     }    
 }

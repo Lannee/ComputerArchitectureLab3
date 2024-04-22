@@ -17,10 +17,10 @@ fn main() -> Result<(), ProcessorError> {
 
     let dev0 = Device::new(schedule);
 
-    let mut CPU = CPU::new(instructions, data, logger);
-    CPU.io.port0.connect_device(dev0);
+    let mut cpu = CPU::new(instructions, data, logger);
+    cpu.io.port0.connect_device(dev0);
 
-    CPU.start().map_err(|err| ProcessorError::ExecutionError(err))?;
+    cpu.start().map_err(|err| ProcessorError::ExecutionError(err))?;
 
     Ok(())
 }
