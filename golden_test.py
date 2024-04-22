@@ -24,11 +24,11 @@ def test_golden(golden):
             assert code == golden["machine_code"]
             
 
-        # os.system(f"cd processor && cargo run -- {target} {schedule} >> {output}")
-        # with open(output, "r") as file:
-        #     code = file.read()
-        #     assert code == golden["output"]
+        os.system(f"cd processor && cargo run -- {target} {schedule} >> {output}")
+        with open(output, "r") as file:
+            code = file.read()
+            assert code == golden["output"]
     
-        # with open("processor/log.txt", "r", encoding="utf-8") as file:
-        #     log = file.read()
-        #     assert log == golden["out_log"]
+        with open("processor/log.txt", "r", encoding="utf-8") as file:
+            log = file.read()
+            assert log == golden["out_log"]
