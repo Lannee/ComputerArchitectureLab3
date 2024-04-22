@@ -4,7 +4,6 @@ use crate::input::IntSchedule;
 #[derive(Debug)]
 pub struct Device {
     schedule: IntSchedule,
-    // pub port: Option<&'a mut Port<'a>>,
 
     out_buffer: Vec<u8>,
     pub int_req: bool,
