@@ -2,8 +2,10 @@
 ; reg3 - last symbol from input
 section .code
     di
+    la reg5, user_name
     la reg1, greeting
     call print
+    call print_endl
     ei 
 wait:
     test reg3, reg3
@@ -19,8 +21,8 @@ wait:
 int_handler0:
     di
     in reg3, 0
-    stbi reg4, reg3
-    inc reg4
+    stbi reg5, reg3
+    inc reg5
     ei
     ret
 
@@ -41,11 +43,18 @@ end:
     pop reg3
     ret
 
+print_endl:
+    push reg3
+    movn reg3, 10 ; new line char
+    out 0, reg3
+    pop reg3
+    ret
+
 section .data
     vec int_handler0
 
 greeting:
-    str Enter your name:
+    str "Enter your name"
 hello:
-    str hello 
+    str "Hello, " 
 user_name:

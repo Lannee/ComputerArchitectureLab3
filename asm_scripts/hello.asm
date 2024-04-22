@@ -1,5 +1,5 @@
 section .code
-
+    di
     la reg3, string
 loop:
     lbi reg4, reg3
@@ -16,4 +16,4 @@ end:
 section .data
 
 string:
-    str Hello World!
+    str "Hello, World!"
