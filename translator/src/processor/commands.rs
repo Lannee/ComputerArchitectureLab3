@@ -29,6 +29,7 @@ pub enum Instruction {
     Be(Mark<Address>),
     Bne(Mark<Address>),
     Bg(Mark<Address>),
+    Ble(Mark<Address>),
 
     La(&'static GlobRegister, Mark<Address>),
     Lw(&'static GlobRegister, Mark<Address>),
@@ -78,6 +79,7 @@ impl FromStr for Instruction {
             "be" => Self::init_be(args),
             "bne" => Self::init_bne(args),
             "bg" => Self::init_bg(args),
+            "ble" => Self::init_ble(args),
 
             "la" => Self::init_la(args),
             "lw" => Self::init_lw(args),
@@ -138,6 +140,7 @@ impl Instruction {
             Be(_) => true,
             Bne(_) => true,
             Bg(_) => true,
+            Ble(_) => true,
             Call(_) => true,
             _ => false
         }
@@ -150,6 +153,7 @@ impl Instruction {
             Be(mark) => Some(mark),
             Bne(mark) => Some(mark),
             Bg(mark) => Some(mark),
+            Ble(mark) => Some(mark),
             La(_, mark) => Some(mark),
             Lw(_, mark) => Some(mark),
             Lb(_, mark) => Some(mark),
@@ -168,6 +172,7 @@ impl Instruction {
             Be(_) => Ok(Be(mark)),
             Bne(_) => Ok(Bne(mark)),
             Bg(_) => Ok(Bg(mark)),
+            Ble(_) => Ok(Ble(mark)),
             La(target, _) => Ok(La(target, mark)),
             Lw(target, _) => Ok(Lw(target, mark)),
             Lb(target, _) => Ok(Lb(target, mark)),
@@ -260,6 +265,18 @@ impl Instruction {
             Err(err) => match err.kind() {
                 IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
                 _ => Ok(Instruction::Bg(Mark::Label(args[0].to_owned())))
+            }
+        }
+    }
+
+    fn init_ble(args: &[&str]) -> Result<Instruction, ParseError> {
+        check_args_len(args, 1)?;
+
+        match args[0].parse::<Address>() {
+            Ok(ok) => Ok(Instruction::Ble(Mark::Address(ok))),
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => return Err(ParseError::InvalidCommandArgumants),
+                _ => Ok(Instruction::Ble(Mark::Label(args[0].to_owned())))
             }
         }
     }

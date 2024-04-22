@@ -18,7 +18,7 @@ fn main() -> Result<(), TranslationError> {
 
     input::get_target_file()
         .map_err(|err| TranslationError::InputError(err))?
-        .write_all(serde_json::to_string(&machine_code).unwrap().as_bytes())
+        .write_all(serde_json::to_string_pretty(&machine_code).unwrap().as_bytes())
         .map_err(|err| TranslationError::InputError(errors::TranslatorInputError::FileError(err)))?;
 
     Ok(())

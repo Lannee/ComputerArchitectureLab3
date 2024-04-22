@@ -19,7 +19,7 @@ pub fn get_src() -> Result<(Instructions, Data), InputError> {
 
     Ok((
         raw_machine_code.instructions,
-        raw_machine_code.data
+        raw_machine_code.data.unwrap_or_else(|| vec![])
     ))
 }
 

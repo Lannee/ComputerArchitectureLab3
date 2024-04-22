@@ -98,10 +98,6 @@ impl DataPath {
     pub fn tick(&mut self) {
         self.alu.tick();
     }
-
-    pub fn write_memory(&mut self) {
-
-    }
 }
 
 
@@ -223,12 +219,7 @@ impl ALUOperation {
     }
 }
 
-pub enum ALUFlag {
-    Zero,
-
-}
-
 
 fn is_sign_bit_set(value: u32) -> bool {
-    value & (1 << u32::BITS-1) == 1
+    value & (1 << u32::BITS-1) != 0
 }

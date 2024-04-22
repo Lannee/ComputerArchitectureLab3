@@ -14,7 +14,7 @@ pub type Instructions = Vec<Instruction>;
 #[derive(Deserialize)]
 pub struct MachineCode {
     pub instructions: Instructions,
-    pub data: Data
+    pub data: Option<Data>
 }
 
 
@@ -32,6 +32,8 @@ pub enum Instruction {
     Be(Address),
     Bne(Address),
     Bg(Address),
+    Ble(Address),
+
 
     La(RegIndex, Address), 
     Lw(RegIndex, Address),
@@ -83,6 +85,7 @@ impl core::fmt::Display for Instruction {
             Be(addr) => write!(f, "be {addr}"),
             Bne(addr) => write!(f, "bne {addr}"),
             Bg(addr) => write!(f, "bg {addr}"),
+            Ble(addr) => write!(f, "ble {addr}"),
 
             La(tgt, addr) => write!(f, "la {tgt}, {addr}"), 
             Lw(tgt, addr) => write!(f, "lw {tgt}, {addr}"),

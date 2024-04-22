@@ -61,6 +61,7 @@ pub struct IOInterface {
     pub data: u8,
 
     pub int_req: bool,
+    pub int_port: PortSelect,
 }
 
 impl IOInterface {
@@ -73,6 +74,7 @@ impl IOInterface {
             data: 0,
             
             int_req: false,
+            int_port: PortSelect::Port0,
         }
     }
 
@@ -84,10 +86,12 @@ impl IOInterface {
             PortSelect::Port0 => {
                 self.int_req = self.port0.int_req;
                 self.data = self.port0.data;
+                if self.port0.int_req {self.int_port = PortSelect::Port0}
             },
             PortSelect::Port1 => {
                 self.int_req = self.port1.int_req;
                 self.data = self.port1.data;
+                if self.port1.int_req {self.int_port = PortSelect::Port1}
             },
         }
     }

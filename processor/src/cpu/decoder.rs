@@ -73,7 +73,13 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Bg(address) => {
-                if !self.cu.datapath.alu.zero_flag && !self.cu.datapath.alu.neg_flag {
+                if !self.cu.datapath.alu.zero_flag && self.cu.datapath.alu.neg_flag {
+                    self.select_ip_input(IpSelect::FromInstruction(*address));
+                }
+                self.cu.tick();
+            },
+            Ble(address) => {
+                if !(!self.cu.datapath.alu.zero_flag && self.cu.datapath.alu.neg_flag) {
                     self.select_ip_input(IpSelect::FromInstruction(*address));
                 }
                 self.cu.tick();
@@ -238,7 +244,8 @@ impl<'a> Decoder<'a> {
                 self.cu.latch(CPULatch::IPIncDP);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
-                self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
+                self.cu.datapath.latch(Latch::WriteW);
+                // self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
                 self.select_ip_input(IpSelect::FromInstruction(*address));
                 self.cu.tick();
             },  
@@ -270,7 +277,8 @@ impl<'a> Decoder<'a> {
                 latch_reg_out_l!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
-                self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
+                self.cu.datapath.latch(Latch::WriteW);
+                // self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
                 self.cu.tick();
             },
             Pop(target) => {
@@ -285,7 +293,8 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
                 self.cu.tick();
-                self.cu.datapath.memory.read_w(self.cu.datapath.addr_reg.value);
+                self.cu.datapath.latch(Latch::ReadW);
+                // self.cu.datapath.memory.read_w(self.cu.datapath.addr_reg.value);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
@@ -299,7 +308,7 @@ impl<'a> Decoder<'a> {
 
         if self.cu.int_req & self.cu.int_enabled {
             self.cu.log_int();
-            let addr = self.cu.io.selected.clone() as usize * mem::size_of::<Address>();
+            let addr = self.cu.io.int_port.clone() as usize * mem::size_of::<Address>();
             self.cu.datapath.latch(Latch::SPALUl);
             self.cu.datapath.alu.right_input = 4;
             self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
