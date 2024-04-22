@@ -35,6 +35,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Run linter
+    - name: Run linter for root
       run: |
         cargo check
+        
+    - name: Run linter for translator
+      run: |
+        cd translator && cargo check
+
+    - name: Run linter for processor
+      run: |
+        cd processor && cargo check
