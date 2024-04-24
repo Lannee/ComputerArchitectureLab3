@@ -1,9 +1,17 @@
 use std::mem;
 
-use crate::{cpu::{ALUOperation, CPULatch, Latch}, errors::ExecutionError, input::machine_code::{Address, Instruction}};
+use crate::{
+    cpu::{
+        ALUOperation, CPULatch, Latch, ALUlSelect
+    }, 
+    errors::ExecutionError, 
+    input::machine_code::{
+        Address, Instruction
+    }
+};
 
 use super::{ProcSig, CPU};
-use crate::{latch_reg_in, latch_reg_out_l, latch_reg_out_r, reg_out_latch};
+use crate::{latch_reg_in, alu_l_select_reg, alu_r_select_reg};
 
 
 
@@ -18,14 +26,15 @@ impl<'a> Decoder<'a> {
         use Instruction::*;
         match instruction {
             Mov(target, source) => {
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             Movn(target, value) => {
-                self.cu.datapath.latch(Latch::DecALUl(*value as u32));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*value as u32));
+                // self.cu.datapath.latch(Latch::DecALUl(*value as u32));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
@@ -40,12 +49,11 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Out(port, source) => {
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.io.select_port(port.clone());
                 self.cu.latch(CPULatch::DPIO);
-                // self.cu.io.send_data();
                 self.cu.tick();
             },
             Di => {
@@ -85,7 +93,8 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             La(target, address) => {
-                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*address));
+                // self.cu.datapath.latch(Latch::DecALUl(*address));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
@@ -93,7 +102,7 @@ impl<'a> Decoder<'a> {
                 // println!("{:?}", self.cu.datapath.reg3);
             },
             Inc(target) => {
-                latch_reg_out_l!(*target, self.cu.datapath);
+                alu_l_select_reg!(*target, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Inc);
                 self.cu.tick();
@@ -102,60 +111,61 @@ impl<'a> Decoder<'a> {
                 // println!("{:?}", self.cu.datapath.reg3);
             },
             Add(target, source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             Sub(target, source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             Mul(target, source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Mul);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             Rem(target, source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Rem);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             And(target, source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::And);
                 self.cu.tick();
                 latch_reg_in!(*target, self.cu.datapath);
                 self.cu.tick();
             },
             Cmp(source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
             },
             Test(source1, source2) => {
-                latch_reg_out_l!(*source1, self.cu.datapath);
-                latch_reg_out_r!(*source2, self.cu.datapath);
+                alu_l_select_reg!(*source1, self.cu.datapath);
+                alu_r_select_reg!(*source2, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::And);
                 // println!("out = {:?}", self.cu.datapath.alu);
                 self.cu.tick();
             },
             Lw(target, address) => {
-                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*address));
+                // self.cu.datapath.latch(Latch::DecALUl(*address));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
@@ -165,7 +175,8 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Lb(target, address) => {
-                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*address));
+                // self.cu.datapath.latch(Latch::DecALUl(*address));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
@@ -175,7 +186,7 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Lbi(target, source) => {
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
@@ -186,62 +197,66 @@ impl<'a> Decoder<'a> {
                 // println!("{:?}", self.cu.datapath.reg4);
             },
             Stw(address, source) => {
-                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*address));
+                // self.cu.datapath.latch(Latch::DecALUl(*address));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteW);
                 self.cu.tick();
             },
             Stb(address, source) => {
-                self.cu.datapath.latch(Latch::DecALUl(*address));
+                self.cu.datapath.sel_alu_l(ALUlSelect::Dcr(*address));
+                // self.cu.datapath.latch(Latch::DecALUl(*address));
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteB);
                 self.cu.tick();
             },
             Stwi(target, source) => {
-                latch_reg_out_l!(*target, self.cu.datapath);
+                alu_l_select_reg!(*target, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteW);
                 self.cu.tick();
             },
             Stbi(target, source) => {
-                latch_reg_out_l!(*target, self.cu.datapath);
+                alu_l_select_reg!(*target, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteB);
                 self.cu.tick();
             },
             Call(address) => {
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                self.cu.latch(CPULatch::IPIncDP);
+                self.cu.datapath.sel_alu_l(ALUlSelect::IPIncDP(self.cu.ip.value));
+                // self.cu.latch(CPULatch::IPIncDP);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteW);
@@ -250,12 +265,14 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },  
             Ret => {
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
@@ -267,14 +284,15 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Push(source) => {
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::ALUoSP);
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                latch_reg_out_l!(*source, self.cu.datapath);
+                alu_l_select_reg!(*source, self.cu.datapath);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::WriteW);
@@ -282,12 +300,14 @@ impl<'a> Decoder<'a> {
                 self.cu.tick();
             },
             Pop(target) => {
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
                 self.cu.datapath.latch(Latch::AddrR);
                 self.cu.tick();
-                self.cu.datapath.latch(Latch::SPALUl);
+                self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+                // self.cu.datapath.latch(Latch::SPALUl);
                 self.cu.datapath.alu.right_input = mem::size_of::<Address>() as u32;
                 self.cu.datapath.alu.execute_operation(ALUOperation::Add);
                 self.cu.tick();
@@ -309,20 +329,22 @@ impl<'a> Decoder<'a> {
         if self.cu.int_req & self.cu.int_enabled {
             self.cu.log_int();
             let addr = self.cu.io.int_port.clone() as usize * mem::size_of::<Address>();
-            self.cu.datapath.latch(Latch::SPALUl);
+            self.cu.datapath.sel_alu_l(ALUlSelect::SP);
+            // self.cu.datapath.latch(Latch::SPALUl);
             self.cu.datapath.alu.right_input = 4;
             self.cu.datapath.alu.execute_operation(ALUOperation::Sub);
             self.cu.tick();
             self.cu.datapath.latch(Latch::ALUoSP);
             self.cu.datapath.latch(Latch::AddrR);
             self.cu.tick();
-            self.cu.latch(CPULatch::IPIncDP);
+            self.cu.datapath.sel_alu_l(ALUlSelect::IPIncDP(self.cu.ip.value));
+            // self.cu.latch(CPULatch::IPIncDP);
             self.cu.datapath.alu.execute_operation(ALUOperation::Add);
             self.cu.tick();
             self.cu.datapath.latch(Latch::WriteW);
-            // self.cu.datapath.memory.write_w(self.cu.datapath.addr_reg.value, self.cu.datapath.alu.output);
             self.cu.tick();
-            self.cu.datapath.latch(Latch::IntVecALUl(addr as u32));
+            self.cu.datapath.sel_alu_l(ALUlSelect::IntVec(addr as u32));
+            // self.cu.datapath.latch(Latch::IntVecALUl(addr as u32));
             self.cu.datapath.alu.execute_operation(ALUOperation::Add);
             self.cu.tick();
             self.cu.datapath.latch(Latch::AddrR);
@@ -351,30 +373,26 @@ impl<'a> Decoder<'a> {
 }
 
 #[macro_export]
-macro_rules! latch_reg_out_l {
+macro_rules! alu_l_select_reg {
     ($index:expr, $datapath:expr) => {
-        $datapath.latch(
-            reg_out_latch!($index, $datapath).0
+        $datapath.sel_alu_l(
+            match $datapath.get_register_alu_l_select($index) {
+                Some(latch) => latch,
+                None => return Err(ExecutionError::InvalidRegisterIndexError)
+            }
         )
     };
 }
 
 #[macro_export]
-macro_rules! latch_reg_out_r {
+macro_rules! alu_r_select_reg {
     ($index:expr, $datapath:expr) => {
-        $datapath.latch(
-            reg_out_latch!($index, $datapath).1
+        $datapath.sel_alu_r(
+            match $datapath.get_register_alu_r_select($index) {
+                Some(latch) => latch,
+                None => return Err(ExecutionError::InvalidRegisterIndexError)
+            }
         )
-    };
-}
-
-#[macro_export]
-macro_rules! reg_out_latch {
-    ($index:expr, $datapath:expr) => {
-        match $datapath.get_register_out_latch($index) {
-            Some(latch) => latch,
-            None => return Err(ExecutionError::InvalidRegisterIndexError)
-        }
     };
 }
 

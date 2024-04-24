@@ -22,17 +22,32 @@ pub struct DataPath {
 }
 
 impl DataPath {
-    pub fn get_register_out_latch(&self, index: usize) -> Option<(Latch, Latch)> {
-        use Latch::*;
+    pub fn get_register_alu_l_select(&self, index: usize) -> Option<ALUlSelect> {
+        use ALUlSelect::*;
         match index {
-            0 => Some((R0ALUl, R0ALUr)),
-            1 => Some((R1ALUl, R1ALUr)),
-            2 => Some((R2ALUl, R2ALUr)),
-            3 => Some((R3ALUl, R3ALUr)),
-            4 => Some((R4ALUl, R4ALUr)),
-            5 => Some((R5ALUl, R5ALUr)),
-            6 => Some((R6ALUl, R6ALUr)),
-            7 => Some((R7ALUl, R7ALUr)),
+            0 => Some(R0),
+            1 => Some(R1),
+            2 => Some(R2),
+            3 => Some(R3),
+            4 => Some(R4),
+            5 => Some(R5),
+            6 => Some(R6),
+            7 => Some(R7),
+            _ => None
+        }
+    }
+
+    pub fn get_register_alu_r_select(&self, index: usize) -> Option<ALUrSelect> {
+        use ALUrSelect::*;
+        match index {
+            0 => Some(R0),
+            1 => Some(R1),
+            2 => Some(R2),
+            3 => Some(R3),
+            4 => Some(R4),
+            5 => Some(R5),
+            6 => Some(R6),
+            7 => Some(R7),
             _ => None
         }
     }
@@ -52,26 +67,47 @@ impl DataPath {
         }
     }
 
+    pub fn sel_alu_l(&mut self, select: ALUlSelect) {
+        use ALUlSelect::*;
+        self.alu.left_input = match select {
+            R0 => self.reg0.value,
+            R1 => self.reg0.value,
+            R2 => self.reg0.value,
+            R3 => self.reg0.value,
+            R4 => self.reg0.value,
+            R5 => self.reg0.value,
+            R6 => self.reg0.value,
+            R7 => self.reg0.value,
+            SP => self.reg0.value,
+        
+            Dcr(value) => value,
+            IntVec(addr) => addr,
+            IPIncDP(value) => value,
+
+            Zero => 0
+        }
+    }
+
+    pub fn sel_alu_r(&mut self, select: ALUrSelect) {
+        use ALUrSelect::*;
+        self.alu.right_input = match select {
+            R0 => self.reg0.value,
+            R1 => self.reg0.value,
+            R2 => self.reg0.value,
+            R3 => self.reg0.value,
+            R4 => self.reg0.value,
+            R5 => self.reg0.value,
+            R6 => self.reg0.value,
+            R7 => self.reg0.value,
+            SP => self.reg0.value,
+
+            Zero => 0
+        }
+    }
+
     pub fn latch(&mut self, latch: Latch) {
         use Latch::*;
         match latch {
-            R0ALUl => self.alu.left_input = self.reg0.value,
-            R1ALUl => self.alu.left_input = self.reg1.value,
-            R2ALUl => self.alu.left_input = self.reg2.value,
-            R3ALUl => self.alu.left_input = self.reg3.value,
-            R4ALUl => self.alu.left_input = self.reg4.value,
-            R5ALUl => self.alu.left_input = self.reg5.value,
-            R6ALUl => self.alu.left_input = self.reg6.value,
-            R7ALUl => self.alu.left_input = self.reg7.value,
-            SPALUl => self.alu.left_input = self.stack_p.value,
-            R0ALUr => self.alu.right_input = self.reg0.value,
-            R1ALUr => self.alu.right_input = self.reg1.value,
-            R2ALUr => self.alu.right_input = self.reg2.value,
-            R3ALUr => self.alu.right_input = self.reg3.value,
-            R4ALUr => self.alu.right_input = self.reg4.value,
-            R5ALUr => self.alu.right_input = self.reg5.value,
-            R6ALUr => self.alu.right_input = self.reg6.value,
-            R7ALUr => self.alu.right_input = self.reg7.value,
             ALUoR0 => self.reg0.value = self.alu.output,
             ALUoR1 => self.reg1.value = self.alu.output,
             ALUoR2 => self.reg2.value = self.alu.output,
@@ -82,8 +118,6 @@ impl DataPath {
             ALUoR7 => self.reg7.value = self.alu.output,
             ALUoSP => self.stack_p.value = self.alu.output,
 
-            DecALUl(value) => self.alu.left_input = value,
-            IntVecALUl(value) => self.alu.left_input = value,
             AddrR => self.addr_reg.value = self.alu.output,
             WriteB => self.memory.write(self.addr_reg.value, self.alu.output as u8),
             WriteW => self.memory.write_w(self.addr_reg.value, self.alu.output),
@@ -94,29 +128,45 @@ impl DataPath {
 
 
     pub fn tick(&mut self) {
-        self.alu.tick();
+        self.sel_alu_l(ALUlSelect::Zero);
+        self.sel_alu_r(ALUrSelect::Zero);
     }
 }
 
 
+pub enum ALUlSelect {
+    R0,
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    SP,
+
+    Dcr(u32),
+    IntVec(Address),
+    IPIncDP(u32),
+
+    Zero
+}
+
+pub enum ALUrSelect {
+    R0,
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    SP,
+
+    Zero
+}
+
 pub enum Latch {
-    R0ALUl,
-    R1ALUl,
-    R2ALUl,
-    R3ALUl,
-    R4ALUl,
-    R5ALUl,
-    R6ALUl,
-    R7ALUl,
-    SPALUl,
-    R0ALUr,
-    R1ALUr,
-    R2ALUr,
-    R3ALUr,
-    R4ALUr,
-    R5ALUr,
-    R6ALUr,
-    R7ALUr,
     ALUoR0,
     ALUoR1,
     ALUoR2,
@@ -127,8 +177,6 @@ pub enum Latch {
     ALUoR7,
     ALUoSP,
 
-    DecALUl(u32),
-    IntVecALUl(Address),
     AddrR,
     WriteB,
     WriteW,
@@ -178,11 +226,6 @@ impl ALU {
     fn set_flags(&mut self) {
         self.zero_flag = self.output == 0;
         self.neg_flag = is_sign_bit_set(self.output);
-    }
-
-    fn tick(&mut self) {
-        self.left_input = u32::default();
-        self.right_input = u32::default();
     }
 }
 

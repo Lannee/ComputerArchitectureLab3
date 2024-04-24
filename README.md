@@ -274,7 +274,7 @@ cargo run -- <source> <schedule> [<log>]
 
 
 
-![](./diagrams/datapath_diagram.png)
+![](./diagrams/datapath_diagram_1.png)
 
 На схеме предоставлена модель datapath
 

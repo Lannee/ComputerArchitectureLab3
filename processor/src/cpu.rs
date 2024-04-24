@@ -103,7 +103,6 @@ impl CPU {
 
 
 pub enum CPULatch {
-    IPIncDP,
     IODP,
     DPIO,
 }
