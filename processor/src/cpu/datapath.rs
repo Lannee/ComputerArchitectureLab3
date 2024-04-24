@@ -71,14 +71,14 @@ impl DataPath {
         use ALUlSelect::*;
         self.alu.left_input = match select {
             R0 => self.reg0.value,
-            R1 => self.reg0.value,
-            R2 => self.reg0.value,
-            R3 => self.reg0.value,
-            R4 => self.reg0.value,
-            R5 => self.reg0.value,
-            R6 => self.reg0.value,
-            R7 => self.reg0.value,
-            SP => self.reg0.value,
+            R1 => self.reg1.value,
+            R2 => self.reg2.value,
+            R3 => self.reg3.value,
+            R4 => self.reg4.value,
+            R5 => self.reg5.value,
+            R6 => self.reg6.value,
+            R7 => self.reg7.value,
+            SP => self.stack_p.value,
         
             Dcr(value) => value,
             IntVec(addr) => addr,
@@ -92,14 +92,14 @@ impl DataPath {
         use ALUrSelect::*;
         self.alu.right_input = match select {
             R0 => self.reg0.value,
-            R1 => self.reg0.value,
-            R2 => self.reg0.value,
-            R3 => self.reg0.value,
-            R4 => self.reg0.value,
-            R5 => self.reg0.value,
-            R6 => self.reg0.value,
-            R7 => self.reg0.value,
-            SP => self.reg0.value,
+            R1 => self.reg1.value,
+            R2 => self.reg2.value,
+            R3 => self.reg3.value,
+            R4 => self.reg4.value,
+            R5 => self.reg5.value,
+            R6 => self.reg6.value,
+            R7 => self.reg7.value,
+            SP => self.stack_p.value,
 
             Zero => 0
         }

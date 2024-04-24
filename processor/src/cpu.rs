@@ -91,7 +91,6 @@ impl CPU {
     pub fn latch(&mut self, latch: CPULatch) {
         use CPULatch::*;
         match latch {
-            IPIncDP => self.datapath.alu.right_input = self.ip.value,
             IODP => self.datapath.alu.output = self.io.data as u32,
             DPIO => {
                 self.io.data = self.datapath.alu.output as u8;
