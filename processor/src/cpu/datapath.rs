@@ -99,7 +99,6 @@ impl DataPath {
             R5 => self.reg5.value,
             R6 => self.reg6.value,
             R7 => self.reg7.value,
-            SP => self.stack_p.value,
 
             Zero => 0
         }
@@ -161,7 +160,6 @@ pub enum ALUrSelect {
     R5,
     R6,
     R7,
-    SP,
 
     Zero
 }

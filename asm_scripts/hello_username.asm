@@ -1,13 +1,10 @@
-; reg5 - next symbol pointer
-; reg3 - last symbol from input
-section .code
-    di
+  section .code
     la reg5, user_name
     la reg1, greeting
     call print
     call print_endl
-    ei 
-wait:
+
+  wait:
     test reg3, reg3
     bne wait
 
@@ -18,7 +15,7 @@ wait:
     call print
     halt
 
-int_handler0:
+  int_handler0:
     di
     in reg3, 0
     stbi reg5, reg3
@@ -26,35 +23,35 @@ int_handler0:
     ei
     ret
 
-print:
-    push reg3
-    push reg4
-    mov reg3, reg1
-loop:
-    lbi reg4, reg3
+  print:
+    push reg6
+    push reg7
+    mov reg6, reg1
+  loop:
+    lbi reg7, reg6
 
-    test reg4, reg4
+    test reg7, reg7
     be end
-    out 0, reg4
-    inc reg3
+    out 0, reg7
+    inc reg6
     jmp loop
-end:
-    pop reg4
-    pop reg3
+  end:  
+    pop reg7
+    pop reg6
     ret
 
-print_endl:
+  print_endl:
     push reg3
     movn reg3, 10 ; new line char
     out 0, reg3
     pop reg3
     ret
 
-section .data
+  section .data 
     vec int_handler0
 
-greeting:
+  greeting:
     str "Enter your name"
-hello:
+  hello:
     str "Hello, " 
-user_name:
+  user_name:

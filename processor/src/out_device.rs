@@ -4,8 +4,9 @@ use crate::input::IntSchedule;
 #[derive(Debug)]
 pub struct Device {
     schedule: IntSchedule,
+    data: u8,
 
-    out_buffer: Vec<u8>,
+    // out_buffer: Vec<u8>,
     pub int_req: bool,
 
     _tick: usize,
@@ -15,8 +16,10 @@ impl Device {
     pub fn new(schedule: IntSchedule) -> Device {
         Device {
             schedule,
-            out_buffer: vec![],
+            data: 0,
+            // out_buffer: vec![],
             int_req: false,
+            
 
             _tick: 0,
         }
@@ -28,7 +31,7 @@ impl Device {
         }
         self._tick += 1;
 
-        self.int_req = !self.out_buffer.is_empty();
+        // self.int_req = !self.out_buffer.is_empty();
     }
 
     pub fn _in(&mut self, data: u8) {
@@ -36,15 +39,19 @@ impl Device {
     }
 
     pub fn _out(&mut self, data: u8) {
-        self.out_buffer.push(data);
+        // self.out_buffer.pussh(data);
+        self.data = data;
+        self.int_req = true;
     }
 
     pub fn on_bus(&self) -> u8 {
-        *self.out_buffer.first().unwrap_or(&0)
+        // *self.out_buffer.first().unwrap_or(&0)
+        self.data
     }
 
     pub fn data_rx(&mut self) {
-        if !self.out_buffer.is_empty() {self.out_buffer.remove(0);};
+        // if !self.out_buffer.is_empty() {self.out_buffer.remove(0);};
+        self.int_req = false;
     }
 }
 
